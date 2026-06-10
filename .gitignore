@@ -1,0 +1,13 @@
+*.dcu
+*.exe
+*.dsk
+*.cfg
+*.dof
+*.ddp
+*.local
+*.identcache
+*.~*
+__history/
+*.bak
+*.log
+Thumbs.db
