@@ -14,9 +14,12 @@ Ventana principal que se muestra tras login exitoso.
 
 Al hacer clic en un item del `ListBoxNav`:
 
-1. Destruye el frame actual en `PanelCenter` (si existe)
-2. Crea el frame correspondiente segun el item seleccionado
-3. Configura el frame con los servicios necesarios
+1. `CreateFrames` crea los frames una sola vez (lazy) y los reusa en navegaciones posteriores
+2. Oculta el frame actual y muestra el correspondiente
+3. Para el frame de Usuarios, vuelve a llamar a `Configure` para refrescar lista y combo de roles
+4. Para Preferencias, solo cambia visibilidad (no se reconfigura)
+
+> **Nota**: Los metodos `Configure` de los frames deben limpiar (`Clear`) los `TComboBox` antes de poblarlos. Si se llaman multiples veces (navegacion repetida a Usuarios o cambio de idioma), los items se duplicarian.
 
 ### Frames
 

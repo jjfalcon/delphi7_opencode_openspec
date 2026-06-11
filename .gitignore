@@ -11,3 +11,4 @@ __history/
 *.bak
 *.log
 Thumbs.db
+data/

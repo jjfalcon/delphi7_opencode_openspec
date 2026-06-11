@@ -45,6 +45,8 @@ begin
   FLocalization := ALocalization;
   FLoginPreferences := ALoginPreferences;
 
+  CboLang.Items.Clear;
+  CboPersistence.Items.Clear;
   for I := 0 to 1 do
   begin
     CboLang.Items.Add(LANG_DISPLAY[I]);

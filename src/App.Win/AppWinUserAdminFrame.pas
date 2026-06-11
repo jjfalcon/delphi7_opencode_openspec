@@ -41,6 +41,7 @@ begin
   FUserMgmt := AUserMgmt;
   FLocalization := ALocalization;
 
+  CboNewRole.Items.Clear;
   CboNewRole.Items.Add('Usuario');
   CboNewRole.Items.Add('Administrador');
   CboNewRole.ItemIndex := 0;

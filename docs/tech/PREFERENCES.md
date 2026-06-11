@@ -45,9 +45,10 @@ Frame embebido en la pestana Preferencias de MainForm.
 ### Flujo de carga
 
 1. `Configure`: recibe `TLocalizationService` e `ILoginPreferences`
-2. Pobla ambos combos con opciones
-3. Establece seleccion actual desde `ILoginPreferences.LoadRepositoryType`
-4. Establece seleccion de idioma desde `FLocalization.Locale`
+2. Limpia ambos combos (`Items.Clear`) para evitar duplicados si `Configure` se llama mas de una vez
+3. Pobla ambos combos con opciones
+4. Establece seleccion actual desde `ILoginPreferences.LoadRepositoryType`
+5. Establece seleccion de idioma desde `FLocalization.Locale`
 
 ### Flujo de guardado
 
