@@ -18,7 +18,9 @@ uses
   AppCoreClock in '..\App.Core\AppCoreClock.pas',
   AppCorePreferences in '..\App.Core\AppCorePreferences.pas',
   AppCoreLocalization in '..\App.Core\AppCoreLocalization.pas',
-  AppCoreUserManagement in '..\App.Core\AppCoreUserManagement.pas';
+  AppCoreUserManagement in '..\App.Core\AppCoreUserManagement.pas',
+  AppCoreRepositoryFactory in '..\App.Core\AppCoreRepositoryFactory.pas',
+  AppCoreFileUserRepository in '..\App.Core\AppCoreFileUserRepository.pas';
 
 var
   LUserRepo: IUserRepository;
@@ -36,7 +38,8 @@ begin
   Application.Initialize;
   Application.Title := 'SDD OpenSpec App';
 
-  LUserRepo := TInMemoryUserRepository.Create;
+  LConfigPath := ExtractFilePath(Application.ExeName) + 'app.config';
+  LUserRepo := TRepositoryFactory.CreateRepository(LConfigPath);
   LHasher := TBasicPasswordHasher.Create;
 
   if LUserRepo.FindByUsername('admin') = nil then
@@ -47,7 +50,6 @@ begin
     LUserRepo.Save(LAdmin);
   end;
 
-  LConfigPath := ExtractFilePath(Application.ExeName) + 'app.config';
   LLangPath := ExtractFilePath(Application.ExeName) + 'lang\';
   LLoginPrefs := TLoginPreferences.Create(LConfigPath);
   LDefaultLocale := LLoginPrefs.LoadLanguage;

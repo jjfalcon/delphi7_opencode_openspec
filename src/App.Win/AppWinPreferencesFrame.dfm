@@ -30,4 +30,21 @@ object FramePreferences: TFramePreferences
     TabOrder = 0
     OnChange = CboLangChange
   end
+  object LblPersistence: TLabel
+    Left = 30
+    Top = 70
+    Width = 66
+    Height = 13
+    Caption = 'Persistencia:'
+  end
+  object CboPersistence: TComboBox
+    Left = 120
+    Top = 67
+    Width = 120
+    Height = 21
+    Style = csDropDownList
+    ItemHeight = 13
+    TabOrder = 1
+    OnChange = CboPersistenceChange
+  end
 end

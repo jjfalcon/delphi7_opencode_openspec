@@ -9,6 +9,8 @@ type
     procedure SaveLastUsername(const AUsername: string);
     function LoadLanguage: string;
     procedure SaveLanguage(const ALocale: string);
+    function LoadRepositoryType: string;
+    procedure SaveRepositoryType(const ARepoType: string);
   end;
 
   TLoginPreferences = class(TInterfacedObject, ILoginPreferences)
@@ -20,6 +22,8 @@ type
     procedure SaveLastUsername(const AUsername: string);
     function LoadLanguage: string;
     procedure SaveLanguage(const ALocale: string);
+    function LoadRepositoryType: string;
+    procedure SaveRepositoryType(const ARepoType: string);
   end;
 
 implementation
@@ -77,6 +81,30 @@ begin
   LIni := TIniFile.Create(FConfigPath);
   try
     LIni.WriteString('Login', 'LastUsername', AUsername);
+  finally
+    LIni.Free;
+  end;
+end;
+
+function TLoginPreferences.LoadRepositoryType: string;
+var
+  LIni: TIniFile;
+begin
+  LIni := TIniFile.Create(FConfigPath);
+  try
+    Result := LIni.ReadString('Repository', 'Type', 'memory');
+  finally
+    LIni.Free;
+  end;
+end;
+
+procedure TLoginPreferences.SaveRepositoryType(const ARepoType: string);
+var
+  LIni: TIniFile;
+begin
+  LIni := TIniFile.Create(FConfigPath);
+  try
+    LIni.WriteString('Repository', 'Type', ARepoType);
   finally
     LIni.Free;
   end;
