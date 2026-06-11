@@ -186,6 +186,187 @@ begin
   end;
 end;
 
+procedure Test_UserMgmt_EditUserSuccess;
+var
+  LRepo: IUserRepository;
+  LSession: TSessionService;
+  LService: TUserManagementService;
+  LUser: TUser;
+  LError: string;
+begin
+  LService := CreateUserMgmtService(LRepo, LSession);
+  try
+    LService.CreateUser('bob', 'pass123', urUser, LError);
+    LUser := LRepo.FindByUsername('bob');
+    AssertTrue(LService.EditUser(LUser.Id, 'bob_updated', '', urAdmin, LError),
+      'EditUser should succeed');
+    AssertEquals('', LError, 'Error should be empty on success');
+    LUser := LRepo.FindByUsername('bob_updated');
+    AssertTrue(LUser <> nil, 'User should exist with new username');
+    AssertTrue(LUser.Role = urAdmin, 'Role should be updated to admin');
+  finally
+    LSession.Free;
+  end;
+end;
+
+procedure Test_UserMgmt_EditUserPassword;
+var
+  LRepo: IUserRepository;
+  LSession: TSessionService;
+  LService: TUserManagementService;
+  LUser: TUser;
+  LHasher: IPasswordHasher;
+  LError: string;
+begin
+  LService := CreateUserMgmtService(LRepo, LSession);
+  try
+    LService.CreateUser('bob', 'pass123', urUser, LError);
+    LUser := LRepo.FindByUsername('bob');
+    AssertTrue(LService.EditUser(LUser.Id, 'bob', 'newpass', urUser, LError),
+      'EditUser should succeed with new password');
+
+    LHasher := TBasicPasswordHasher.Create;
+    AssertEquals(LHasher.Hash('newpass', LUser.PasswordSalt), LUser.PasswordHash,
+      'Password hash should be updated');
+  finally
+    LSession.Free;
+  end;
+end;
+
+procedure Test_UserMgmt_EditUserKeepsPasswordIfEmpty;
+var
+  LRepo: IUserRepository;
+  LSession: TSessionService;
+  LService: TUserManagementService;
+  LUser: TUser;
+  LHashBefore: string;
+  LError: string;
+begin
+  LService := CreateUserMgmtService(LRepo, LSession);
+  try
+    LService.CreateUser('bob', 'pass123', urUser, LError);
+    LUser := LRepo.FindByUsername('bob');
+    LHashBefore := LUser.PasswordHash;
+
+    AssertTrue(LService.EditUser(LUser.Id, 'bob_updated', '', urUser, LError),
+      'EditUser should succeed without changing password');
+    AssertEquals(LHashBefore, LUser.PasswordHash,
+      'Password hash should be preserved when no new password given');
+  finally
+    LSession.Free;
+  end;
+end;
+
+procedure Test_UserMgmt_EditUserRejectEmptyUsername;
+var
+  LRepo: IUserRepository;
+  LSession: TSessionService;
+  LService: TUserManagementService;
+  LUser: TUser;
+  LError: string;
+begin
+  LService := CreateUserMgmtService(LRepo, LSession);
+  try
+    LService.CreateUser('bob', 'pass123', urUser, LError);
+    LUser := LRepo.FindByUsername('bob');
+    AssertTrue(not LService.EditUser(LUser.Id, '', '', urUser, LError),
+      'EditUser should reject empty username');
+    AssertEquals('admin_username_required', LError,
+      'Error should be admin_username_required');
+  finally
+    LSession.Free;
+  end;
+end;
+
+procedure Test_UserMgmt_EditUserRejectDuplicateUsername;
+var
+  LRepo: IUserRepository;
+  LSession: TSessionService;
+  LService: TUserManagementService;
+  LUser: TUser;
+  LError: string;
+begin
+  LService := CreateUserMgmtService(LRepo, LSession);
+  try
+    LService.CreateUser('bob', 'pass', urUser, LError);
+    LService.CreateUser('alice', 'pass', urUser, LError);
+    LUser := LRepo.FindByUsername('bob');
+    AssertTrue(not LService.EditUser(LUser.Id, 'alice', '', urUser, LError),
+      'EditUser should reject duplicate username');
+    AssertEquals('admin_username_exists', LError,
+      'Error should be admin_username_exists');
+  finally
+    LSession.Free;
+  end;
+end;
+
+procedure Test_UserMgmt_EditUserNonAdminDenied;
+var
+  LRepo: IUserRepository;
+  LHasher: IPasswordHasher;
+  LSession: TSessionService;
+  LPerm: TPermissionService;
+  LService: TUserManagementService;
+  LError: string;
+begin
+  LRepo := TInMemoryUserRepository.Create;
+  LHasher := TBasicPasswordHasher.Create;
+  LSession := CreateUserSession;
+  LPerm := TPermissionService.Create(LSession);
+  LService := TUserManagementService.Create(LRepo, LHasher, LPerm);
+  try
+    AssertTrue(not LService.EditUser('any', 'new', '', urUser, LError),
+      'EditUser should be denied for non-admin');
+    AssertTrue(LError <> '', 'Error should not be empty');
+  finally
+    LSession.Free;
+  end;
+end;
+
+procedure Test_UserMgmt_DeleteUserSuccess;
+var
+  LRepo: IUserRepository;
+  LSession: TSessionService;
+  LService: TUserManagementService;
+  LUser: TUser;
+  LError: string;
+begin
+  LService := CreateUserMgmtService(LRepo, LSession);
+  try
+    LService.CreateUser('bob', 'pass123', urUser, LError);
+    LUser := LRepo.FindByUsername('bob');
+    AssertTrue(LService.DeleteUser(LUser.Id, LError),
+      'DeleteUser should succeed');
+    LUser := LRepo.FindByUsername('bob');
+    AssertTrue(LUser = nil, 'User should not exist after delete');
+  finally
+    LSession.Free;
+  end;
+end;
+
+procedure Test_UserMgmt_DeleteUserNonAdminDenied;
+var
+  LRepo: IUserRepository;
+  LHasher: IPasswordHasher;
+  LSession: TSessionService;
+  LPerm: TPermissionService;
+  LService: TUserManagementService;
+  LError: string;
+begin
+  LRepo := TInMemoryUserRepository.Create;
+  LHasher := TBasicPasswordHasher.Create;
+  LSession := CreateUserSession;
+  LPerm := TPermissionService.Create(LSession);
+  LService := TUserManagementService.Create(LRepo, LHasher, LPerm);
+  try
+    AssertTrue(not LService.DeleteUser('any', LError),
+      'DeleteUser should be denied for non-admin');
+    AssertTrue(LError <> '', 'Error should not be empty');
+  finally
+    LSession.Free;
+  end;
+end;
+
 { --- Runner --- }
 
 procedure RunUserManagementTests(var AFailures: Integer);
@@ -202,6 +383,14 @@ begin
   Test_UserMgmt_GetUsers;
   Test_UserMgmt_CanManageForAdmin;
   Test_UserMgmt_CanManageForRegularUser;
+  Test_UserMgmt_EditUserSuccess;
+  Test_UserMgmt_EditUserPassword;
+  Test_UserMgmt_EditUserKeepsPasswordIfEmpty;
+  Test_UserMgmt_EditUserRejectEmptyUsername;
+  Test_UserMgmt_EditUserRejectDuplicateUsername;
+  Test_UserMgmt_EditUserNonAdminDenied;
+  Test_UserMgmt_DeleteUserSuccess;
+  Test_UserMgmt_DeleteUserNonAdminDenied;
 
   if FailCount = 0 then
     Writeln('All user management tests passed.')

@@ -26,14 +26,15 @@ object FrameUserAdmin: TFrameUserAdmin
     Font.Style = [fsBold]
     ParentFont = False
   end
-  object LstUsers: TListBox
-    Left = 20
-    Top = 40
-    Width = 200
-    Height = 180
-    ItemHeight = 13
-    TabOrder = 0
-  end
+    object LstUsers: TListBox
+      Left = 20
+      Top = 40
+      Width = 200
+      Height = 180
+      ItemHeight = 13
+      TabOrder = 0
+      OnClick = LstUsersClick
+    end
   object GrpCreate: TGroupBox
     Left = 235
     Top = 35
@@ -95,6 +96,26 @@ object FrameUserAdmin: TFrameUserAdmin
       TabOrder = 3
       OnClick = BtnCreateUserClick
     end
+  end
+  object BtnEditUser: TButton
+    Left = 20
+    Top = 222
+    Width = 90
+    Height = 25
+    Caption = 'Editar'
+    Enabled = False
+    TabOrder = 2
+    OnClick = BtnEditUserClick
+  end
+  object BtnDeleteUser: TButton
+    Left = 120
+    Top = 222
+    Width = 90
+    Height = 25
+    Caption = 'Eliminar'
+    Enabled = False
+    TabOrder = 3
+    OnClick = BtnDeleteUserClick
   end
   object LblError: TLabel
     Left = 20

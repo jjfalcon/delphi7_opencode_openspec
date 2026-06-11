@@ -18,11 +18,17 @@ type
     LblNewRole: TLabel;
     CboNewRole: TComboBox;
     BtnCreateUser: TButton;
+    BtnEditUser: TButton;
+    BtnDeleteUser: TButton;
     LblError: TLabel;
     procedure BtnCreateUserClick(Sender: TObject);
+    procedure BtnEditUserClick(Sender: TObject);
+    procedure BtnDeleteUserClick(Sender: TObject);
+    procedure LstUsersClick(Sender: TObject);
   private
     FUserMgmt: TUserManagementService;
     FLocalization: TLocalizationService;
+    FSelectedUserId: string;
     procedure UpdateTexts;
     procedure RefreshUserList;
   public
@@ -39,6 +45,7 @@ procedure TFrameUserAdmin.Configure(AUserMgmt: TUserManagementService;
 begin
   FUserMgmt := AUserMgmt;
   FLocalization := ALocalization;
+  FSelectedUserId := '';
 
   CboNewRole.Items.Clear;
   CboNewRole.Items.AddObject(FLocalization.GetString('admin_role_user'), TObject(urUser));
@@ -57,6 +64,8 @@ begin
   LblNewPassword.Caption := FLocalization.GetString('login_password');
   LblNewRole.Caption := FLocalization.GetString('admin_role');
   BtnCreateUser.Caption := FLocalization.GetString('admin_btn_create');
+  BtnEditUser.Caption := FLocalization.GetString('admin_btn_edit');
+  BtnDeleteUser.Caption := FLocalization.GetString('admin_btn_delete');
   LblError.Caption := '';
 end;
 
@@ -75,12 +84,45 @@ begin
       begin
         LUser := TUser(LList[I]);
         if LUser.Role = urAdmin then
-          LstUsers.Items.Add(LUser.Username + ' (' + FLocalization.GetString('admin_role_admin') + ')')
+          LstUsers.Items.AddObject(LUser.Username + ' (' + FLocalization.GetString('admin_role_admin') + ')',
+            TObject(LUser))
         else
-          LstUsers.Items.Add(LUser.Username + ' (' + FLocalization.GetString('admin_role_user') + ')');
+          LstUsers.Items.AddObject(LUser.Username + ' (' + FLocalization.GetString('admin_role_user') + ')',
+            TObject(LUser));
       end;
   finally
     LstUsers.Items.EndUpdate;
+  end;
+  FSelectedUserId := '';
+  BtnEditUser.Enabled := False;
+  BtnDeleteUser.Enabled := False;
+end;
+
+procedure TFrameUserAdmin.LstUsersClick(Sender: TObject);
+var
+  LUser: TUser;
+  I: Integer;
+begin
+  if LstUsers.ItemIndex >= 0 then
+  begin
+    LUser := TUser(LstUsers.Items.Objects[LstUsers.ItemIndex]);
+    FSelectedUserId := LUser.Id;
+    BtnEditUser.Enabled := True;
+    BtnDeleteUser.Enabled := True;
+    EdtNewUsername.Text := LUser.Username;
+    EdtNewPassword.Text := '';
+    for I := 0 to CboNewRole.Items.Count - 1 do
+      if TUserRole(CboNewRole.Items.Objects[I]) = LUser.Role then
+      begin
+        CboNewRole.ItemIndex := I;
+        Break;
+      end;
+  end
+  else
+  begin
+    FSelectedUserId := '';
+    BtnEditUser.Enabled := False;
+    BtnDeleteUser.Enabled := False;
   end;
 end;
 
@@ -106,6 +148,55 @@ begin
   end
   else
     LblError.Caption := FLocalization.GetString(LError);
+end;
+
+procedure TFrameUserAdmin.BtnEditUserClick(Sender: TObject);
+var
+  LRole: TUserRole;
+  LError: string;
+begin
+  LblError.Caption := '';
+  if FSelectedUserId = '' then
+    Exit;
+
+  if CboNewRole.ItemIndex >= 0 then
+    LRole := TUserRole(CboNewRole.Items.Objects[CboNewRole.ItemIndex])
+  else
+    LRole := urUser;
+
+  if FUserMgmt.EditUser(FSelectedUserId, EdtNewUsername.Text,
+    EdtNewPassword.Text, LRole, LError) then
+  begin
+    EdtNewUsername.Text := '';
+    EdtNewPassword.Text := '';
+    CboNewRole.ItemIndex := 0;
+    RefreshUserList;
+  end
+  else
+    LblError.Caption := FLocalization.GetString(LError);
+end;
+
+procedure TFrameUserAdmin.BtnDeleteUserClick(Sender: TObject);
+var
+  LError: string;
+begin
+  LblError.Caption := '';
+  if FSelectedUserId = '' then
+    Exit;
+
+  if MessageDlg(FLocalization.GetString('admin_confirm_delete'),
+    mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+  begin
+    if FUserMgmt.DeleteUser(FSelectedUserId, LError) then
+    begin
+      EdtNewUsername.Text := '';
+      EdtNewPassword.Text := '';
+      CboNewRole.ItemIndex := 0;
+      RefreshUserList;
+    end
+    else
+      LblError.Caption := FLocalization.GetString(LError);
+  end;
 end;
 
 end.
