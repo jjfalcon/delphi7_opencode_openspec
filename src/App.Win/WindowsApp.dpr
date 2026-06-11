@@ -19,7 +19,8 @@ uses
   AppCoreLocalization in '..\App.Core\AppCoreLocalization.pas',
   AppCoreUserManagement in '..\App.Core\AppCoreUserManagement.pas',
   AppCoreRepositoryFactory in '..\App.Core\AppCoreRepositoryFactory.pas',
-  AppCoreFileUserRepository in '..\App.Core\AppCoreFileUserRepository.pas';
+  AppCoreFileUserRepository in '..\App.Core\AppCoreFileUserRepository.pas',
+  AppCoreUtils in '..\App.Core\AppCoreUtils.pas';
 
 var
   LFormLogin: TFrmLogin;
@@ -35,7 +36,7 @@ var
   LPermService: TPermissionService;
   LUserMgmt: TUserManagementService;
 begin
-  CoInitializeEx(nil, COINIT_MULTITHREADED);
+//  CoInitializeEx(nil, COINIT_MULTITHREADED);
   Application.Initialize;
   Application.Title := 'SDD OpenSpec App';
 

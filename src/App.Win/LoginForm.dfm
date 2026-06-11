@@ -45,6 +45,13 @@ object FrmLogin: TFrmLogin
     ParentFont = False
     WordWrap = True
   end
+  object Label1: TLabel
+    Left = 30
+    Top = 105
+    Width = 60
+    Height = 13
+    Caption = 'Contrase'#241'a:'
+  end
   object EdtUsername: TEdit
     Left = 110
     Top = 27

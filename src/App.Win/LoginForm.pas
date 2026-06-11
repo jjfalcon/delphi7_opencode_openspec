@@ -16,6 +16,7 @@ type
     BtnLogin: TButton;
     BtnCancel: TButton;
     LblError: TLabel;
+    Label1: TLabel;
     procedure BtnLoginClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
   private

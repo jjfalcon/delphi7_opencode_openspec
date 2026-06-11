@@ -1,9 +1,9 @@
 object FrmMain: TFrmMain
-  Left = 0
+  Left = -7
   Top = 0
+  Width = 616
+  Height = 339
   Caption = 'SDD OpenSpec App'
-  ClientHeight = 300
-  ClientWidth = 600
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,9 +17,9 @@ object FrmMain: TFrmMain
   TextHeight = 13
   object PanelNav: TPanel
     Left = 0
-    Top = 0
+    Top = 35
     Width = 150
-    Height = 300
+    Height = 265
     Align = alLeft
     BevelOuter = bvLowered
     TabOrder = 0
@@ -27,7 +27,7 @@ object FrmMain: TFrmMain
       Left = 1
       Top = 1
       Width = 148
-      Height = 298
+      Height = 263
       Align = alClient
       ItemHeight = 13
       TabOrder = 0
@@ -35,9 +35,9 @@ object FrmMain: TFrmMain
     end
   end
   object PanelTop: TPanel
-    Left = 150
+    Left = 0
     Top = 0
-    Width = 450
+    Width = 600
     Height = 35
     Align = alTop
     BevelOuter = bvNone
@@ -45,7 +45,7 @@ object FrmMain: TFrmMain
     object LblWelcome: TLabel
       Left = 15
       Top = 10
-      Width = 120
+      Width = 70
       Height = 16
       Caption = 'Bienvenido'
       Font.Charset = DEFAULT_CHARSET
@@ -58,7 +58,7 @@ object FrmMain: TFrmMain
     object LblRole: TLabel
       Left = 150
       Top = 11
-      Width = 100
+      Width = 15
       Height = 13
       Caption = 'Rol'
     end
