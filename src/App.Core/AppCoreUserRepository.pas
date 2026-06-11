@@ -12,46 +12,43 @@ type
     function FindById(const AId: string): TUser;
     function FindByUsername(const AUsername: string): TUser;
     function FindAll: TList;
-    procedure Save(AUser: TUser);
+    procedure Add(AUser: TUser);
+    procedure Update(AUser: TUser);
     procedure Delete(const AId: string);
   end;
 
-  TInMemoryUserRepository = class(TInterfacedObject, IUserRepository)
-  private
+  TBaseUserRepository = class(TInterfacedObject, IUserRepository)
+  protected
     FItems: TList;
+    procedure DoAfterSave; virtual;
+    procedure DoAfterDelete; virtual;
   public
     constructor Create;
     destructor Destroy; override;
     function FindById(const AId: string): TUser;
     function FindByUsername(const AUsername: string): TUser;
     function FindAll: TList;
-    procedure Save(AUser: TUser);
+    procedure Add(AUser: TUser);
+    procedure Update(AUser: TUser);
     procedure Delete(const AId: string);
+  end;
+
+  TInMemoryUserRepository = class(TBaseUserRepository)
   end;
 
 implementation
 
 uses
   SysUtils,
-  ActiveX;
+  AppCoreUtils;
 
-function NewGuidString: string;
-var
-  LGuid: TGuid;
-begin
-  if CoCreateGuid(LGuid) = S_OK then
-    Result := GuidToString(LGuid)
-  else
-    Result := '';
-end;
-
-constructor TInMemoryUserRepository.Create;
+constructor TBaseUserRepository.Create;
 begin
   inherited Create;
   FItems := TList.Create;
 end;
 
-destructor TInMemoryUserRepository.Destroy;
+destructor TBaseUserRepository.Destroy;
 var
   I: Integer;
 begin
@@ -61,7 +58,7 @@ begin
   inherited;
 end;
 
-function TInMemoryUserRepository.FindById(const AId: string): TUser;
+function TBaseUserRepository.FindById(const AId: string): TUser;
 var
   I: Integer;
 begin
@@ -74,7 +71,7 @@ begin
   Result := nil;
 end;
 
-function TInMemoryUserRepository.FindByUsername(const AUsername: string): TUser;
+function TBaseUserRepository.FindByUsername(const AUsername: string): TUser;
 var
   I: Integer;
 begin
@@ -87,17 +84,23 @@ begin
   Result := nil;
 end;
 
-function TInMemoryUserRepository.FindAll: TList;
+function TBaseUserRepository.FindAll: TList;
 begin
   Result := FItems;
 end;
 
-procedure TInMemoryUserRepository.Save(AUser: TUser);
-var
-  LExisting: TUser;
+procedure TBaseUserRepository.Add(AUser: TUser);
 begin
   if AUser.Id = '' then
     AUser.Id := NewGuidString;
+  FItems.Add(AUser);
+  DoAfterSave;
+end;
+
+procedure TBaseUserRepository.Update(AUser: TUser);
+var
+  LExisting: TUser;
+begin
   LExisting := FindById(AUser.Id);
   if LExisting <> nil then
   begin
@@ -107,13 +110,11 @@ begin
     LExisting.Role := AUser.Role;
     LExisting.IsLocked := AUser.IsLocked;
     LExisting.FailedLoginAttempts := AUser.FailedLoginAttempts;
-    AUser.Free;
-  end
-  else
-    FItems.Add(AUser);
+    DoAfterSave;
+  end;
 end;
 
-procedure TInMemoryUserRepository.Delete(const AId: string);
+procedure TBaseUserRepository.Delete(const AId: string);
 var
   LUser: TUser;
 begin
@@ -122,7 +123,16 @@ begin
   begin
     FItems.Remove(LUser);
     LUser.Free;
+    DoAfterDelete;
   end;
+end;
+
+procedure TBaseUserRepository.DoAfterSave;
+begin
+end;
+
+procedure TBaseUserRepository.DoAfterDelete;
+begin
 end;
 
 end.

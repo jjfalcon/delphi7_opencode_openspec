@@ -42,6 +42,7 @@ type
     FTimeoutMinutes: Integer;
   public
     constructor Create(AClock: IClock; ATimeoutMinutes: Integer);
+    destructor Destroy; override;
     procedure StartSession(AUser: TUser);
     procedure Touch;
     function IsActive: Boolean;
@@ -63,6 +64,10 @@ implementation
 uses
   SysUtils;
 
+const
+  CDJB2HashSeed = 5381;
+  CHashHexLength = 8;
+
 { TBasicPasswordHasher }
 
 function TBasicPasswordHasher.Hash(const APassword, ASalt: string): string;
@@ -70,12 +75,12 @@ var
   I: Integer;
   LHash: LongWord;
 begin
-  LHash := 5381;
+  LHash := CDJB2HashSeed;
   for I := 1 to Length(APassword) do
     LHash := ((LHash shl 5) + LHash) + Ord(APassword[I]);
   for I := 1 to Length(ASalt) do
     LHash := ((LHash shl 5) + LHash) + Ord(ASalt[I]);
-  Result := IntToHex(LHash, 8);
+  Result := IntToHex(LHash, CHashHexLength);
 end;
 
 function TBasicPasswordHasher.GenerateSalt: string;
@@ -131,11 +136,13 @@ begin
     LUser.FailedLoginAttempts := LUser.FailedLoginAttempts + 1;
     if LUser.FailedLoginAttempts >= FMaxFailedAttempts then
       LUser.IsLocked := True;
+    FUserRepository.Update(LUser);
     Result := lrInvalidCredentials;
     Exit;
   end;
 
   LUser.FailedLoginAttempts := 0;
+  FUserRepository.Update(LUser);
   AUser := LUser;
   Result := lrSuccess;
 end;
@@ -149,6 +156,12 @@ begin
   FTimeoutMinutes := ATimeoutMinutes;
   FLoggedInUser := nil;
   FLastActivity := 0;
+end;
+
+destructor TSessionService.Destroy;
+begin
+  FLoggedInUser.Free;
+  inherited;
 end;
 
 procedure TSessionService.StartSession(AUser: TUser);

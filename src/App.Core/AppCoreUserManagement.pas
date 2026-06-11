@@ -71,7 +71,7 @@ begin
   LUser := TUser.Create('', Trim(AUsername), ARole);
   LUser.PasswordSalt := FHasher.GenerateSalt;
   LUser.PasswordHash := FHasher.Hash(APassword, LUser.PasswordSalt);
-  FRepo.Save(LUser);
+  FRepo.Add(LUser);
   Result := True;
 end;
 

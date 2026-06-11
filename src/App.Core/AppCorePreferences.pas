@@ -32,6 +32,14 @@ uses
   SysUtils,
   IniFiles;
 
+const
+  CSecLogin = 'Login';
+  CKeyLastUsername = 'LastUsername';
+  CSecLanguage = 'Language';
+  CKeyDefault = 'Default';
+  CSecRepository = 'Repository';
+  CKeyType = 'Type';
+
 constructor TLoginPreferences.Create(const AConfigPath: string);
 begin
   inherited Create;
@@ -44,7 +52,7 @@ var
 begin
   LIni := TIniFile.Create(FConfigPath);
   try
-    Result := LIni.ReadString('Login', 'LastUsername', '');
+    Result := LIni.ReadString(CSecLogin, CKeyLastUsername, '');
   finally
     LIni.Free;
   end;
@@ -56,7 +64,7 @@ var
 begin
   LIni := TIniFile.Create(FConfigPath);
   try
-    Result := LIni.ReadString('Language', 'Default', 'es');
+    Result := LIni.ReadString(CSecLanguage, CKeyDefault, 'es');
   finally
     LIni.Free;
   end;
@@ -68,7 +76,7 @@ var
 begin
   LIni := TIniFile.Create(FConfigPath);
   try
-    LIni.WriteString('Language', 'Default', ALocale);
+    LIni.WriteString(CSecLanguage, CKeyDefault, ALocale);
   finally
     LIni.Free;
   end;
@@ -80,7 +88,7 @@ var
 begin
   LIni := TIniFile.Create(FConfigPath);
   try
-    LIni.WriteString('Login', 'LastUsername', AUsername);
+    LIni.WriteString(CSecLogin, CKeyLastUsername, AUsername);
   finally
     LIni.Free;
   end;
@@ -92,7 +100,7 @@ var
 begin
   LIni := TIniFile.Create(FConfigPath);
   try
-    Result := LIni.ReadString('Repository', 'Type', 'memory');
+    Result := LIni.ReadString(CSecRepository, CKeyType, 'memory');
   finally
     LIni.Free;
   end;
@@ -104,7 +112,7 @@ var
 begin
   LIni := TIniFile.Create(FConfigPath);
   try
-    LIni.WriteString('Repository', 'Type', ARepoType);
+    LIni.WriteString(CSecRepository, CKeyType, ARepoType);
   finally
     LIni.Free;
   end;

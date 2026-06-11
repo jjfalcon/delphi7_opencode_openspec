@@ -9,14 +9,17 @@ type
     function FindById(const AId: string): TUser;
     function FindByUsername(const AUsername: string): TUser;
     function FindAll: TList;
-    procedure Save(AUser: TUser);
+    procedure Add(AUser: TUser);
+    procedure Update(AUser: TUser);
     procedure Delete(const AId: string);
   end;
 ```
 
 - `FindAll` retorna `TList` interno (no copia) por compatibilidad Delphi 7
-- `Save` inserta si es nuevo (Id vacio) o actualiza si ya existe
+- `Add` inserta nuevo usuario (toma ownership del objeto; asigna GUID si Id vacio)
+- `Update` actualiza campos de usuario existente (caller retiene ownership)
 - `Delete` busca por Id y remueve + libera
+- `TBaseUserRepository` implementa Template Method con `DoAfterSave`/`DoAfterDelete` virtuales
 
 ## TInMemoryUserRepository
 
@@ -29,7 +32,7 @@ class function TRepositoryFactory.CreateRepository(
   const AConfigPath: string): IUserRepository;
 ```
 
-Lee `app.config` seccion `[Repository]`:
+Lee `app.config` seccion `[Repository]` usando constantes `CSecRepository` y `CKeyType`:
 
 ```ini
 [Repository]
@@ -39,6 +42,7 @@ Type=file        ; para persistencia JSON
 
 - Si `Type=file`: crea `TFileUserRepository`
 - Si `Type=memory` o desconocido: crea `TInMemoryUserRepository`
+- La seccion y clave se definen como constantes en `AppCoreRepositoryFactory.pas` y `AppCorePreferences.pas`
 
 ## TFileUserRepository
 
@@ -67,13 +71,21 @@ Escribe JSON manualmente (sin librerias externas):
 - GUID generado con `CoCreateGuid` + `GuidToString`, sin llaves `{}`
 - Se llama despues de cada `Save` y `Delete`
 
-### LoadFromFile
+### LoadFromFile (refactorizada)
 
-1. Lee todo el archivo como texto plano
-2. Busca `"users": [...]`
-3. Para cada bloque `{...}`, extrae campos via `ExtractJSONStr`
-4. `ExtractJSONStr` soporta valores con comillas (string) y sin comillas (boolean, integer)
-5. Las llaves `{}` se saltan correctamente incluso si aparecen dentro de valores con comillas
+Compuesta por 3 metodos extraidos:
+
+1. `ReadEntireFile` — lee todo el archivo como texto plano a string
+2. `ExtractUsersArray` — busca `"users": [...]` y retorna el contenido del array
+3. `ParseUserBlock` — parsea un bloque `{...}` y retorna `TUser` o `nil` si faltan campos obligatorios
+
+Para cada bloque se extraen campos via `ExtractJSONStr` (soporta valores con/sin comillas). Las llaves `{}` se saltan correctamente incluso si aparecen dentro de valores con comillas.
+
+### Metodos de soporte
+
+- `EscapeJSON` / `UnescapeJSON`: manejo de escape en valores string
+- `ExtractJSONStr(const ALine, AKey): string`: extrae valor de un campo JSON clave:valor
+- `NewGuidString`: genera GUID unico para `Id`
 
 ### NewGuidString
 

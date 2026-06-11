@@ -3,10 +3,9 @@ unit MainForm;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls,
+  Windows, SysUtils, Classes, Controls, Forms, Dialogs, StdCtrls, ExtCtrls,
   AppCoreUser, AppCoreAuth, AppCoreLocalization, AppCorePreferences,
-  AppCoreUserManagement, AppWinPreferencesFrame, AppWinUserAdminFrame;
+  AppCoreUserManagement, PreferencesFrame, UserAdminFrame;
 
 type
   TFrmMain = class(TForm)
@@ -42,9 +41,6 @@ type
       ALoginPreferences: ILoginPreferences;
       AUserMgmt: TUserManagementService);
   end;
-
-var
-  FrmMain: TFrmMain;
 
 implementation
 
@@ -132,7 +128,7 @@ begin
     LblRoleMsg.Caption := FLocalization.GetString('main_role_user');
   BtnLogout.Caption := FLocalization.GetString('main_btn_logout');
 
-  if LstNav.Items.Count >= 3 then
+  if LstNav.Items.Count > NAV_PREFERENCIAS then
   begin
     LstNav.Items[NAV_INICIO] := FLocalization.GetString('nav_inicio');
     LstNav.Items[NAV_USUARIOS] := FLocalization.GetString('nav_usuarios');

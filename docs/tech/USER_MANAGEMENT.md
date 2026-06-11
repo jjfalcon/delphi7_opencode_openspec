@@ -56,7 +56,8 @@ Frame VCL embebido en la pestana Usuarios de MainForm.
 `Configure` se llama al crear el frame y cada vez que se navega a Usuarios o cambia idioma. Por tanto:
 
 1. Limpia `CboNewRole.Items.Clear` antes de poblar el combo
-2. Agrega opciones "Usuario" y "Administrador"
-3. Llama a `UpdateTexts` y `RefreshUserList`
+2. Agrega opciones via `Items.AddObject` con `TUserRole` casteado a `TObject` (la lista muestra texto localizado, el objeto almacena el rol real)
+3. Al leer la seleccion: `TUserRole(CboNewRole.Items.Objects[ItemIndex])` en vez de comparar `ItemIndex` hardcoded
+4. Llama a `UpdateTexts` y `RefreshUserList`
 
 Sin el `Clear`, los items se duplicarian cada vez que se llama a `Configure`.

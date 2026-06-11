@@ -5,13 +5,12 @@ uses
   SysUtils,
   Dialogs,
   Classes,
-  IniFiles,
   Controls,
   ActiveX,
   LoginForm in 'LoginForm.pas' {FrmLogin},
   MainForm in 'MainForm.pas' {FrmMain},
-  AppWinPreferencesFrame in 'AppWinPreferencesFrame.pas' {FramePreferences: TFrame},
-  AppWinUserAdminFrame in 'AppWinUserAdminFrame.pas' {FrameUserAdmin: TFrame},
+  PreferencesFrame in 'PreferencesFrame.pas' {FramePreferences: TFrame},
+  UserAdminFrame in 'UserAdminFrame.pas' {FrameUserAdmin: TFrame},
   AppCoreUser in '..\App.Core\AppCoreUser.pas',
   AppCoreUserRepository in '..\App.Core\AppCoreUserRepository.pas',
   AppCoreAuth in '..\App.Core\AppCoreAuth.pas',
@@ -23,6 +22,8 @@ uses
   AppCoreFileUserRepository in '..\App.Core\AppCoreFileUserRepository.pas';
 
 var
+  LFormLogin: TFrmLogin;
+  LFormMain: TFrmMain;
   LUserRepo: IUserRepository;
   LHasher: IPasswordHasher;
   LAdmin: TUser;
@@ -47,7 +48,7 @@ begin
     LAdmin := TUser.Create('', 'admin', urAdmin);
     LAdmin.PasswordSalt := LHasher.GenerateSalt;
     LAdmin.PasswordHash := LHasher.Hash('admin', LAdmin.PasswordSalt);
-    LUserRepo.Save(LAdmin);
+    LUserRepo.Add(LAdmin);
   end;
 
   LLangPath := ExtractFilePath(Application.ExeName) + 'lang\';
@@ -55,27 +56,27 @@ begin
   LDefaultLocale := LLoginPrefs.LoadLanguage;
   LLocalization := TLocalizationService.Create(LLangPath, LDefaultLocale);
 
-  FrmLogin := TFrmLogin.Create(Application);
+  LFormLogin := TFrmLogin.Create(Application);
   try
-    FrmLogin.Configure(LUserRepo, LLocalization);
+    LFormLogin.Configure(LUserRepo, LLocalization);
 
-    if FrmLogin.ShowModal = mrOk then
+    if LFormLogin.ShowModal = mrOk then
     begin
-      LPermService := TPermissionService.Create(FrmLogin.SessionService);
+      LPermService := TPermissionService.Create(LFormLogin.SessionService);
       LUserMgmt := TUserManagementService.Create(LUserRepo, LHasher,
         LPermService);
 
-      Application.CreateForm(TFrmMain, FrmMain);
-      FrmMain.Configure(FrmLogin.SessionService,
-        FrmLogin.SessionService.LoggedInUser, LLocalization, LLoginPrefs,
+      Application.CreateForm(TFrmMain, LFormMain);
+      LFormMain.Configure(LFormLogin.SessionService,
+        LFormLogin.SessionService.LoggedInUser, LLocalization, LLoginPrefs,
         LUserMgmt);
-      FrmLogin.Free;
-      FrmLogin := nil;
+      LFormLogin.Free;
+      LFormLogin := nil;
       Application.Run;
     end;
   finally
-    if FrmLogin <> nil then
-      FrmLogin.Free;
+    if LFormLogin <> nil then
+      LFormLogin.Free;
     LLocalization.Free;
   end;
 end.

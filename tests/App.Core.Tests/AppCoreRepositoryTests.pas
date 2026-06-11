@@ -13,37 +13,9 @@ uses
   ActiveX,
   AppCoreUser,
   AppCoreUserRepository,
-  AppCoreAuth,
   AppCoreRepositoryFactory,
-  AppCoreFileUserRepository;
-
-var
-  TestCount: Integer;
-  FailCount: Integer;
-
-procedure AssertTrue(ACondition: Boolean; const AMessage: string);
-begin
-  Inc(TestCount);
-  if not ACondition then
-  begin
-    Writeln('FAIL: ' + AMessage);
-    Inc(FailCount);
-  end
-  else
-    Writeln('PASS: ' + AMessage);
-end;
-
-procedure AssertEquals(AExpected, AActual: string; const AMessage: string); overload;
-begin
-  AssertTrue(AExpected = AActual, AMessage + ' Expected "' + AExpected +
-    '", got "' + AActual + '".');
-end;
-
-procedure AssertEquals(AExpected, AActual: Integer; const AMessage: string); overload;
-begin
-  AssertTrue(AExpected = AActual, AMessage + ' Expected ' + IntToStr(AExpected) +
-    ', got ' + IntToStr(AActual) + '.');
-end;
+  AppCoreFileUserRepository,
+  AppCoreTestUtils;
 
 procedure CleanupRepo(const AConfigPath: string);
 var
@@ -53,17 +25,6 @@ begin
   DeleteFile(LDataDir + '\users.json');
   RemoveDir(LDataDir);
   DeleteFile(AConfigPath);
-end;
-
-function CreateTestUser(const AId, AUsername: string; ARole: TUserRole;
-  const APassword: string): TUser;
-var
-  LHasher: IPasswordHasher;
-begin
-  LHasher := TBasicPasswordHasher.Create;
-  Result := TUser.Create(AId, AUsername, ARole);
-  Result.PasswordSalt := LHasher.GenerateSalt;
-  Result.PasswordHash := LHasher.Hash(APassword, Result.PasswordSalt);
 end;
 
 { --- TRepositoryFactory tests --- }
@@ -83,7 +44,7 @@ begin
   end;
   LRepo := TRepositoryFactory.CreateRepository(LConfigPath);
   AssertTrue(LRepo <> nil, 'Factory should return a repository');
-  LRepo.Save(CreateTestUser('', 'testuser', urUser, 'pass'));
+  LRepo.Add(CreateTestUser('', 'testuser', urUser, 'pass'));
   LUser := LRepo.FindByUsername('testuser');
   AssertTrue(LUser <> nil, 'Default repo should save and find users');
   DeleteFile(LConfigPath);
@@ -105,7 +66,7 @@ begin
   end;
   LRepo := TRepositoryFactory.CreateRepository(LConfigPath);
   AssertTrue(LRepo <> nil, 'Factory should return a repository');
-  LRepo.Save(CreateTestUser('', 'fileuser', urUser, 'pass'));
+  LRepo.Add(CreateTestUser('', 'fileuser', urUser, 'pass'));
   AssertTrue(FileExists(LDataFile),
     'File repo should create data\users.json');
   LRepo := nil;
@@ -127,7 +88,7 @@ begin
   end;
   LRepo := TRepositoryFactory.CreateRepository(LConfigPath);
   AssertTrue(LRepo <> nil, 'Factory should return a repository');
-  LRepo.Save(CreateTestUser('', 'unkuser', urUser, 'pass'));
+  LRepo.Add(CreateTestUser('', 'unkuser', urUser, 'pass'));
   LUser := LRepo.FindByUsername('unkuser');
   AssertTrue(LUser <> nil, 'Unknown type repo should behave like memory');
   DeleteFile(LConfigPath);
@@ -145,7 +106,7 @@ begin
   LConfigPath := ExtractFilePath(ParamStr(0)) + 'test_filerepo.ini';
   LRepo := TFileUserRepository.Create(LConfigPath);
   LUser := CreateTestUser('', 'alice', urUser, 'secret');
-  LRepo.Save(LUser);
+  LRepo.Add(LUser);
   LFound := LRepo.FindById(LUser.Id);
   AssertTrue(LFound <> nil, 'Should find user by Id in file repo');
   AssertEquals('alice', LFound.Username, 'Username should match');
@@ -163,7 +124,7 @@ begin
   LConfigPath := ExtractFilePath(ParamStr(0)) + 'test_filerepo2.ini';
   LRepo := TFileUserRepository.Create(LConfigPath);
   LUser := CreateTestUser('u1', 'bob', urUser, 'pass');
-  LRepo.Save(LUser);
+  LRepo.Add(LUser);
   LFound := LRepo.FindByUsername('bob');
   AssertTrue(LFound <> nil, 'Should find user by username in file repo');
   AssertEquals('u1', LFound.Id, 'Id should match');
@@ -193,8 +154,8 @@ var
 begin
   LConfigPath := ExtractFilePath(ParamStr(0)) + 'test_filerepo4.ini';
   LRepo := TFileUserRepository.Create(LConfigPath);
-  LRepo.Save(CreateTestUser('', 'u1', urUser, 'pass'));
-  LRepo.Save(CreateTestUser('', 'u2', urAdmin, 'pass'));
+  LRepo.Add(CreateTestUser('', 'u1', urUser, 'pass'));
+  LRepo.Add(CreateTestUser('', 'u2', urAdmin, 'pass'));
   LList := LRepo.FindAll;
   AssertEquals(2, LList.Count, 'FindAll should return all users in file repo');
   LRepo.Free;
@@ -210,7 +171,7 @@ begin
   LConfigPath := ExtractFilePath(ParamStr(0)) + 'test_filerepo5.ini';
   LRepo := TFileUserRepository.Create(LConfigPath);
   LUser := CreateTestUser('', 'alice', urUser, 'secret');
-  LRepo.Save(LUser);
+  LRepo.Add(LUser);
   LRepo.Delete(LUser.Id);
   AssertTrue(LRepo.FindById(LUser.Id) = nil,
     'User should be removed after delete in file repo');
@@ -229,7 +190,7 @@ begin
   LConfigPath := ExtractFilePath(ParamStr(0)) + 'test_filerepo6.ini';
   LRepo1 := TFileUserRepository.Create(LConfigPath);
   LUser := CreateTestUser('', 'persist', urUser, 'test');
-  LRepo1.Save(LUser);
+  LRepo1.Add(LUser);
   LRepo1.Free;
 
   LRepo2 := TFileUserRepository.Create(LConfigPath);

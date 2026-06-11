@@ -8,53 +8,28 @@ uses
   AppCoreUserRepository;
 
 type
-  TFileUserRepository = class(TInterfacedObject, IUserRepository)
+  TFileUserRepository = class(TBaseUserRepository)
   private
-    FItems: TList;
     FDataPath: string;
     FConfigDir: string;
     procedure LoadFromFile;
     procedure SaveToFile;
     function GetDataDir: string;
+    function ReadEntireFile(const APath: string): string;
+    function ExtractUsersArray(const AFullText: string): string;
+    function ParseUserBlock(const ABlock: string): TUser;
+  protected
+    procedure DoAfterSave; override;
+    procedure DoAfterDelete; override;
   public
     constructor Create(const AConfigPath: string);
-    destructor Destroy; override;
-    function FindById(const AId: string): TUser;
-    function FindByUsername(const AUsername: string): TUser;
-    function FindAll: TList;
-    procedure Save(AUser: TUser);
-    procedure Delete(const AId: string);
   end;
 
 implementation
 
 uses
   SysUtils,
-  ActiveX;
-
-function NewGuidString: string;
-var
-  LGuid: TGuid;
-begin
-  if CoCreateGuid(LGuid) = S_OK then
-    Result := GuidToString(LGuid)
-  else
-    Result := '';
-  Result := StringReplace(Result, '{', '', [rfReplaceAll]);
-  Result := StringReplace(Result, '}', '', [rfReplaceAll]);
-end;
-
-function PosEx(const ASubStr, AStr: string; AOffset: Integer): Integer;
-var
-  LWork: string;
-begin
-  if AOffset < 1 then
-    AOffset := 1;
-  LWork := Copy(AStr, AOffset, Length(AStr));
-  Result := Pos(ASubStr, LWork);
-  if Result > 0 then
-    Result := Result + AOffset - 1;
-end;
+  AppCoreUtils;
 
 function EscapeJSON(const AValue: string): string;
 var
@@ -150,21 +125,10 @@ end;
 constructor TFileUserRepository.Create(const AConfigPath: string);
 begin
   inherited Create;
-  FItems := TList.Create;
   FConfigDir := ExtractFilePath(AConfigPath);
   FDataPath := GetDataDir + 'users.json';
   ForceDirectories(GetDataDir);
   LoadFromFile;
-end;
-
-destructor TFileUserRepository.Destroy;
-var
-  I: Integer;
-begin
-  for I := 0 to FItems.Count - 1 do
-    TUser(FItems[I]).Free;
-  FItems.Free;
-  inherited;
 end;
 
 function TFileUserRepository.GetDataDir: string;
@@ -172,178 +136,137 @@ begin
   Result := FConfigDir + 'data' + PathDelim;
 end;
 
-function TFileUserRepository.FindById(const AId: string): TUser;
-var
-  I: Integer;
+procedure TFileUserRepository.DoAfterSave;
 begin
-  for I := 0 to FItems.Count - 1 do
-  begin
-    Result := TUser(FItems[I]);
-    if Result.Id = AId then
-      Exit;
-  end;
-  Result := nil;
-end;
-
-function TFileUserRepository.FindByUsername(
-  const AUsername: string): TUser;
-var
-  I: Integer;
-begin
-  for I := 0 to FItems.Count - 1 do
-  begin
-    Result := TUser(FItems[I]);
-    if CompareText(Result.Username, AUsername) = 0 then
-      Exit;
-  end;
-  Result := nil;
-end;
-
-function TFileUserRepository.FindAll: TList;
-begin
-  Result := FItems;
-end;
-
-procedure TFileUserRepository.Save(AUser: TUser);
-var
-  LExisting: TUser;
-begin
-  if AUser.Id = '' then
-    AUser.Id := NewGuidString;
-  LExisting := FindById(AUser.Id);
-  if LExisting <> nil then
-  begin
-    LExisting.Username := AUser.Username;
-    LExisting.PasswordHash := AUser.PasswordHash;
-    LExisting.PasswordSalt := AUser.PasswordSalt;
-    LExisting.Role := AUser.Role;
-    LExisting.IsLocked := AUser.IsLocked;
-    LExisting.FailedLoginAttempts := AUser.FailedLoginAttempts;
-    AUser.Free;
-  end
-  else
-    FItems.Add(AUser);
   SaveToFile;
 end;
 
-procedure TFileUserRepository.Delete(const AId: string);
-var
-  LUser: TUser;
+procedure TFileUserRepository.DoAfterDelete;
 begin
-  LUser := FindById(AId);
-  if LUser <> nil then
-  begin
-    FItems.Remove(LUser);
-    LUser.Free;
-    SaveToFile;
-  end;
+  SaveToFile;
 end;
 
-procedure TFileUserRepository.LoadFromFile;
+function TFileUserRepository.ReadEntireFile(const APath: string): string;
 var
   LFile: TextFile;
   LLine: string;
-  LFullText: string;
-  LPos: Integer;
-  LEnd: Integer;
-  LBlock: string;
-  LId, LUsername, LHash, LSalt, LRoleVal: string;
-  LRoles: TUserRole;
-  LIsLocked: Boolean;
-  LFailed: Integer;
-  LUser: TUser;
 begin
-  if not FileExists(FDataPath) then
-    Exit;
-
-  LFullText := '';
-  AssignFile(LFile, FDataPath);
+  Result := '';
+  AssignFile(LFile, APath);
   try
     Reset(LFile);
     while not Eof(LFile) do
     begin
       Readln(LFile, LLine);
-      LFullText := LFullText + LLine;
+      Result := Result + LLine;
     end;
   finally
     CloseFile(LFile);
   end;
+end;
 
-  LPos := Pos('"users"', LFullText);
+function TFileUserRepository.ExtractUsersArray(
+  const AFullText: string): string;
+var
+  LPos: Integer;
+begin
+  Result := '';
+  LPos := Pos('"users"', AFullText);
   if LPos = 0 then
     Exit;
-
-  LPos := PosEx('[', LFullText, LPos);
+  LPos := PosEx('[', AFullText, LPos);
   if LPos = 0 then
     Exit;
-
-  LFullText := Copy(LFullText, LPos + 1, Length(LFullText));
-  LPos := Pos(']', LFullText);
+  Result := Copy(AFullText, LPos + 1, Length(AFullText));
+  LPos := Pos(']', Result);
   if LPos > 0 then
-    LFullText := Copy(LFullText, 1, LPos - 1);
+    Result := Copy(Result, 1, LPos - 1);
+  Result := Trim(Result);
+end;
 
-  if Trim(LFullText) = '' then
+function TFileUserRepository.ParseUserBlock(const ABlock: string): TUser;
+var
+  LId, LUsername, LHash, LSalt, LRoleVal: string;
+  LRoles: TUserRole;
+  LIsLocked: Boolean;
+  LFailed: Integer;
+begin
+  Result := nil;
+  LId := ExtractJSONStr(ABlock, '"id":');
+  LUsername := ExtractJSONStr(ABlock, '"username":');
+  if (LId = '') or (LUsername = '') then
+    Exit;
+  LHash := ExtractJSONStr(ABlock, '"passwordHash":');
+  LSalt := ExtractJSONStr(ABlock, '"passwordSalt":');
+  LRoleVal := ExtractJSONStr(ABlock, '"role":');
+  LIsLocked := ExtractJSONStr(ABlock, '"isLocked":') = 'true';
+  LFailed := StrToIntDef(ExtractJSONStr(ABlock, '"failedAttempts":'), 0);
+  if LRoleVal = 'admin' then
+    LRoles := urAdmin
+  else
+    LRoles := urUser;
+  Result := TUser.Create(LId, LUsername, LRoles);
+  Result.PasswordHash := LHash;
+  Result.PasswordSalt := LSalt;
+  Result.IsLocked := LIsLocked;
+  Result.FailedLoginAttempts := LFailed;
+end;
+
+procedure TFileUserRepository.LoadFromFile;
+var
+  LFullText: string;
+  LContent: string;
+  LPos: Integer;
+  LEnd: Integer;
+  LBlock: string;
+  LUser: TUser;
+begin
+  if not FileExists(FDataPath) then
+    Exit;
+
+  LFullText := ReadEntireFile(FDataPath);
+  LContent := ExtractUsersArray(LFullText);
+  if LContent = '' then
     Exit;
 
   LPos := 1;
-  while LPos <= Length(LFullText) do
+  while LPos <= Length(LContent) do
   begin
-    LPos := PosEx('{', LFullText, LPos);
+    LPos := PosEx('{', LContent, LPos);
     if LPos = 0 then
       Break;
     Inc(LPos);
 
     LEnd := LPos;
-    while LEnd <= Length(LFullText) do
+    while LEnd <= Length(LContent) do
     begin
-      if LFullText[LEnd] = '"' then
+      if LContent[LEnd] = '"' then
       begin
         Inc(LEnd);
-        while LEnd <= Length(LFullText) do
+        while LEnd <= Length(LContent) do
         begin
-          if LFullText[LEnd] = '\' then
+          if LContent[LEnd] = '\' then
             Inc(LEnd, 2)
-          else if LFullText[LEnd] = '"' then
+          else if LContent[LEnd] = '"' then
             Break
           else
             Inc(LEnd);
         end;
       end
-      else if LFullText[LEnd] = '}' then
+      else if LContent[LEnd] = '}' then
         Break;
       Inc(LEnd);
     end;
 
-    LBlock := Copy(LFullText, LPos, LEnd - LPos);
+    LBlock := Copy(LContent, LPos, LEnd - LPos);
     LPos := LEnd + 1;
-
     LBlock := Trim(LBlock);
     if LBlock = '' then
       Continue;
 
-    LId := ExtractJSONStr(LBlock, '"id":');
-    LUsername := ExtractJSONStr(LBlock, '"username":');
-    LHash := ExtractJSONStr(LBlock, '"passwordHash":');
-    LSalt := ExtractJSONStr(LBlock, '"passwordSalt":');
-    LRoleVal := ExtractJSONStr(LBlock, '"role":');
-    LIsLocked := ExtractJSONStr(LBlock, '"isLocked":') = 'true';
-    LFailed := StrToIntDef(
-      ExtractJSONStr(LBlock, '"failedAttempts":'), 0);
-
-    if (LId <> '') and (LUsername <> '') then
-    begin
-      if LRoleVal = 'admin' then
-        LRoles := urAdmin
-      else
-        LRoles := urUser;
-
-      LUser := TUser.Create(LId, LUsername, LRoles);
-      LUser.PasswordHash := LHash;
-      LUser.PasswordSalt := LSalt;
-      LUser.IsLocked := LIsLocked;
-      LUser.FailedLoginAttempts := LFailed;
+    LUser := ParseUserBlock(LBlock);
+    if LUser <> nil then
       FItems.Add(LUser);
-    end;
   end;
 end;
 

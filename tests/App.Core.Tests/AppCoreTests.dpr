@@ -19,7 +19,8 @@ uses
   AppCoreLocalization in '..\..\src\App.Core\AppCoreLocalization.pas',
   AppCoreUserManagement in '..\..\src\App.Core\AppCoreUserManagement.pas',
   AppCoreRepositoryFactory in '..\..\src\App.Core\AppCoreRepositoryFactory.pas',
-  AppCoreFileUserRepository in '..\..\src\App.Core\AppCoreFileUserRepository.pas';
+  AppCoreFileUserRepository in '..\..\src\App.Core\AppCoreFileUserRepository.pas',
+  AppCoreTestUtils in 'AppCoreTestUtils.pas';
 
 var
   Failures: Integer;

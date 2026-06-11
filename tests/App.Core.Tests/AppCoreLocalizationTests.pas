@@ -10,35 +10,8 @@ uses
   SysUtils,
   Classes,
   IniFiles,
-  AppCoreLocalization;
-
-var
-  TestCount: Integer;
-  FailCount: Integer;
-
-procedure AssertTrue(ACondition: Boolean; const AMessage: string);
-begin
-  Inc(TestCount);
-  if not ACondition then
-  begin
-    Writeln('FAIL: ' + AMessage);
-    Inc(FailCount);
-  end
-  else
-    Writeln('PASS: ' + AMessage);
-end;
-
-procedure AssertEquals(AExpected, AActual: string; const AMessage: string); overload;
-begin
-  AssertTrue(AExpected = AActual, AMessage + ' Expected "' + AExpected +
-    '", got "' + AActual + '".');
-end;
-
-procedure AssertEquals(AExpected, AActual: Integer; const AMessage: string); overload;
-begin
-  AssertTrue(AExpected = AActual, AMessage + ' Expected ' + IntToStr(AExpected) +
-    ', got ' + IntToStr(AActual) + '.');
-end;
+  AppCoreLocalization,
+  AppCoreTestUtils;
 
 procedure CreateTestLangFile(const ADir, ALocale: string;
   const AKeys, AValues: array of string);

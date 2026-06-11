@@ -25,14 +25,14 @@ Contiene modelos, interfaces, servicios y repositorios. No depende de VCL.
 | Unidad | Responsabilidad |
 |--------|----------------|
 | `AppCoreUser.pas` | Clase `TUser` con `TUserRole` (admin/user) |
-| `AppCoreUserRepository.pas` | Interfaz `IUserRepository` + impl. en memoria `TInMemoryUserRepository` |
-| `AppCoreAuth.pas` | `TAuthService` (login), `TSessionService` (sesion/timeout), `TPermissionService` (roles), `TBasicPasswordHasher` (DJB2) |
+| `AppCoreUserRepository.pas` | Interfaz `IUserRepository` (`Add`/`Update`/`Delete`) + `TBaseUserRepository` (Template Method) + `TInMemoryUserRepository` |
+| `AppCoreAuth.pas` | `TAuthService` (login), `TSessionService` (sesion/timeout; `Destroy` libera `FLoggedInUser`), `TPermissionService` (roles), `TBasicPasswordHasher` (DJB2; constantes `CDJB2HashSeed`, `CHashHexLength`) |
 | `AppCoreClock.pas` | `IClock` para time-testable, `TSystemClock` |
-| `AppCorePreferences.pas` | `ILoginPreferences` para leer/escribir `app.config` |
+| `AppCorePreferences.pas` | `ILoginPreferences` para leer/escribir `app.config`; constantes `CSecLogin`, `CKeyLastUsername`, `CSecLanguage`, `CKeyDefault`, `CSecRepository`, `CKeyType` |
 | `AppCoreLocalization.pas` | `TLocalizationService` para i18n via INI |
 | `AppCoreUserManagement.pas` | `TUserManagementService` (CRUD usuarios, validaciones, permisos) |
-| `AppCoreFileUserRepository.pas` | `TFileUserRepository` (persistencia JSON a disco) |
-| `AppCoreRepositoryFactory.pas` | `TRepositoryFactory` (Factory Method: memoria o archivo) |
+| `AppCoreFileUserRepository.pas` | `TFileUserRepository` (persistencia JSON a disco; `LoadFromFile` descompuesta en `ReadEntireFile`/`ExtractUsersArray`/`ParseUserBlock`) |
+| `AppCoreRepositoryFactory.pas` | `TRepositoryFactory` (Factory Method: memoria o archivo; constantes `CSecRepository`, `CKeyType`) |
 
 ### App.Win (UI)
 
@@ -40,11 +40,11 @@ Ventanas VCL que llaman a servicios del nucleo. Sin reglas de negocio.
 
 | Unidad | Responsabilidad |
 |--------|----------------|
-| `WindowsApp.dpr` | Punto de entrada: crea dependencias, muestra LoginForm, luego MainForm |
-| `LoginForm.pas` | Dialogo modal de login |
-| `MainForm.pas` | Ventana principal con navegacion lateral + frames embebidos |
-| `AppWinPreferencesFrame.pas` | Frame de preferencias (idioma, persistencia) |
-| `AppWinUserAdminFrame.pas` | Frame de administracion de usuarios |
+| `WindowsApp.dpr` | Punto de entrada: crea dependencias, muestra LoginForm via variable local `LFormLogin`, luego MainForm via `LFormMain` |
+| `LoginForm.pas` | Dialogo modal de login (sin variable global `FrmLogin`) |
+| `MainForm.pas` | Ventana principal con navegacion lateral + frames embebidos (sin variable global `FrmMain`) |
+| `PreferencesFrame.pas` | Frame de preferencias (idioma, persistencia) |
+| `UserAdminFrame.pas` | Frame de administracion de usuarios |
 
 ### Tests
 
@@ -52,12 +52,12 @@ Runner de consola (`AppCoreTests.dpr`) ejecuta todas las suites secuencialmente.
 
 | Suite | Tests |
 |-------|-------|
-| Auth Service | 30 tests (login, session, password, permisos) |
-| Localization | 5 tests (carga idiomas, fallback) |
+| Auth Service | 33 tests (login, session, password, permisos, preferences) |
+| Localization | 6 tests (carga idiomas, cambio, fallback) |
 | User Management | 7 tests (crear usuario, validaciones, permisos) |
 | Repository | 9 tests (factory, file repo CRUD, persistencia) |
 
-Total: 51 tests.
+Total: 55 tests.
 
 ## Flujo de arranque (WindowsApp.dpr)
 
@@ -67,8 +67,9 @@ Total: 51 tests.
 4. Si no existe admin, crearlo con credenciales por defecto
 5. Cargar idioma desde `ILoginPreferences.LoadLanguage`
 6. Crear `TLocalizationService`
-7. Mostrar `LoginForm` modal
-8. Si login exitoso: crear `TPermissionService`, `TUserManagementService`, mostrar `MainForm`
+7. Crear `LFormLogin := TFrmLogin.Create` y mostrar modal
+8. Si login exitoso: crear `TPermissionService`, `TUserManagementService`, crear `LFormMain` via `Application.CreateForm`, luego `LFormLogin.Free` y `Application.Run`
+9. En caso de error (finally): liberar `LFormLogin` y `LLocalization`
 
 ## Build
 
@@ -81,7 +82,7 @@ dcc32 -B -U"src/App.Core" src/App.Win/WindowsApp.dpr
 
 ## Convenciones
 
-- Unit names: `AppCore<NombredelClase>.pas` (Core), `AppWin<NombredelForm>.pas` (VCL)
+- Unit names: `AppCore<NombredelClase>.pas` (Core), `AppWin<NombredelForm>.pas` (VCL, aunque tras renombrar a `PreferencesFrame.pas`/`UserAdminFrame.pas` se omitio el prefijo por brevedad)
 - Clases con prefijo `T`, interfaces con prefijo `I`
 - Indentacion 2 espacios, begin/end alineados
 - Metodos en PascalCase

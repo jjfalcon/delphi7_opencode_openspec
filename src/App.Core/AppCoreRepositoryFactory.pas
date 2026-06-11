@@ -18,6 +18,10 @@ uses
   IniFiles,
   AppCoreFileUserRepository;
 
+const
+  CSecRepository = 'Repository';
+  CKeyType = 'Type';
+
 class function TRepositoryFactory.CreateRepository(
   const AConfigPath: string): IUserRepository;
 var
@@ -26,7 +30,7 @@ var
 begin
   LIni := TIniFile.Create(AConfigPath);
   try
-    LRepoType := LowerCase(LIni.ReadString('Repository', 'Type', 'memory'));
+    LRepoType := LowerCase(LIni.ReadString(CSecRepository, CKeyType, 'memory'));
   finally
     LIni.Free;
   end;

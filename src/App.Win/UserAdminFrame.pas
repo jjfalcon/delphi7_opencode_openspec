@@ -1,10 +1,9 @@
-unit AppWinUserAdminFrame;
+unit UserAdminFrame;
 
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls,
+  Windows, SysUtils, Classes, Controls, Forms, Dialogs, StdCtrls,
   AppCoreUser, AppCoreUserManagement, AppCoreLocalization;
 
 type
@@ -42,8 +41,8 @@ begin
   FLocalization := ALocalization;
 
   CboNewRole.Items.Clear;
-  CboNewRole.Items.Add('Usuario');
-  CboNewRole.Items.Add('Administrador');
+  CboNewRole.Items.AddObject(FLocalization.GetString('admin_role_user'), TObject(urUser));
+  CboNewRole.Items.AddObject(FLocalization.GetString('admin_role_admin'), TObject(urAdmin));
   CboNewRole.ItemIndex := 0;
 
   UpdateTexts;
@@ -76,9 +75,9 @@ begin
       begin
         LUser := TUser(LList[I]);
         if LUser.Role = urAdmin then
-          LstUsers.Items.Add(LUser.Username + ' (Admin)')
+          LstUsers.Items.Add(LUser.Username + ' (' + FLocalization.GetString('admin_role_admin') + ')')
         else
-          LstUsers.Items.Add(LUser.Username + ' (User)');
+          LstUsers.Items.Add(LUser.Username + ' (' + FLocalization.GetString('admin_role_user') + ')');
       end;
   finally
     LstUsers.Items.EndUpdate;
@@ -92,8 +91,8 @@ var
 begin
   LblError.Caption := '';
 
-  if CboNewRole.ItemIndex = 1 then
-    LRole := urAdmin
+  if CboNewRole.ItemIndex >= 0 then
+    LRole := TUserRole(CboNewRole.Items.Objects[CboNewRole.ItemIndex])
   else
     LRole := urUser;
 

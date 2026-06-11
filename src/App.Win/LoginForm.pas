@@ -3,8 +3,7 @@ unit LoginForm;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls,
+  Windows, SysUtils, Classes, Controls, Forms, Dialogs, StdCtrls,
   AppCoreUser, AppCoreUserRepository, AppCoreAuth, AppCoreClock,
   AppCorePreferences, AppCoreLocalization;
 
@@ -37,12 +36,13 @@ type
     property LoggedInUserId: string read FLastUsername;
   end;
 
-var
-  FrmLogin: TFrmLogin;
-
 implementation
 
 {$R *.dfm}
+
+const
+  CMaxFailedAttempts = 3;
+  CSessionTimeoutMins = 5;
 
 procedure TFrmLogin.Configure(AUserRepository: IUserRepository;
   ALocalization: TLocalizationService);
@@ -52,9 +52,9 @@ begin
   FUserRepository := AUserRepository;
   FLocalization := ALocalization;
   FPasswordHasher := TBasicPasswordHasher.Create;
-  FAuthService := TAuthService.Create(FUserRepository, FPasswordHasher, 3);
+  FAuthService := TAuthService.Create(FUserRepository, FPasswordHasher, CMaxFailedAttempts);
   LClock := TSystemClock.Create;
-  FSessionService := TSessionService.Create(LClock, 5);
+  FSessionService := TSessionService.Create(LClock, CSessionTimeoutMins);
   FPermissionService := TPermissionService.Create(FSessionService);
   FLoginPreferences := TLoginPreferences.Create(
     ExtractFilePath(Application.ExeName) + 'app.config');

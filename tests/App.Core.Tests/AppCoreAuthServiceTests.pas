@@ -15,43 +15,8 @@ uses
   AppCoreUserRepository,
   AppCoreAuth,
   AppCoreClock,
-  AppCorePreferences;
-
-var
-  TestCount: Integer;
-  FailCount: Integer;
-
-procedure AssertTrue(ACondition: Boolean; const AMessage: string);
-begin
-  Inc(TestCount);
-  if not ACondition then
-  begin
-    Writeln('FAIL: ' + AMessage);
-    Inc(FailCount);
-  end
-  else
-    Writeln('PASS: ' + AMessage);
-end;
-
-procedure AssertEquals(AExpected, AActual: string; const AMessage: string); overload;
-begin
-  AssertTrue(AExpected = AActual, AMessage + ' Expected "' + AExpected +
-    '", got "' + AActual + '".');
-end;
-
-procedure AssertEquals(AExpected, AActual: Integer; const AMessage: string); overload;
-begin
-  AssertTrue(AExpected = AActual, AMessage + ' Expected ' + IntToStr(AExpected) +
-    ', got ' + IntToStr(AActual) + '.');
-end;
-
-function CreateTestUser(const AId, AUsername: string; ARole: TUserRole;
-  AHasher: IPasswordHasher; const APassword: string): TUser;
-begin
-  Result := TUser.Create(AId, AUsername, ARole);
-  Result.PasswordSalt := AHasher.GenerateSalt;
-  Result.PasswordHash := AHasher.Hash(APassword, Result.PasswordSalt);
-end;
+  AppCorePreferences,
+  AppCoreTestUtils;
 
 { --- TUser tests --- }
 
@@ -81,7 +46,7 @@ var
 begin
   LRepo := TInMemoryUserRepository.Create;
   LUser := TUser.Create('', 'alice', urUser);
-  LRepo.Save(LUser);
+  LRepo.Add(LUser);
   LFound := LRepo.FindById(LUser.Id);
   AssertTrue(LFound <> nil, 'Should find user by Id');
   AssertEquals('alice', LFound.Username, 'Username should match');
@@ -95,7 +60,7 @@ var
 begin
   LRepo := TInMemoryUserRepository.Create;
   LUser := TUser.Create('u1', 'bob', urUser);
-  LRepo.Save(LUser);
+  LRepo.Add(LUser);
   LFound := LRepo.FindByUsername('bob');
   AssertTrue(LFound <> nil, 'Should find user by username');
   AssertEquals('u1', LFound.Id, 'Id should match');
@@ -109,7 +74,7 @@ var
 begin
   LRepo := TInMemoryUserRepository.Create;
   LUser := TUser.Create('u1', 'Bob', urUser);
-  LRepo.Save(LUser);
+  LRepo.Add(LUser);
   LFound := LRepo.FindByUsername('bob');
   AssertTrue(LFound <> nil, 'Username search should be case-insensitive');
 end;
@@ -130,8 +95,8 @@ var
   LList: TList;
 begin
   LRepo := TInMemoryUserRepository.Create;
-  LRepo.Save(TUser.Create('', 'u1', urUser));
-  LRepo.Save(TUser.Create('', 'u2', urAdmin));
+  LRepo.Add(TUser.Create('', 'u1', urUser));
+  LRepo.Add(TUser.Create('', 'u2', urAdmin));
   LList := LRepo.FindAll;
   AssertEquals(2, LList.Count, 'FindAll should return all users');
 end;
@@ -144,9 +109,10 @@ var
 begin
   LRepo := TInMemoryUserRepository.Create;
   LUser := TUser.Create('u1', 'alice', urUser);
-  LRepo.Save(LUser);
+  LRepo.Add(LUser);
   LUser := TUser.Create('u1', 'alice_updated', urAdmin);
-  LRepo.Save(LUser);
+  LRepo.Update(LUser);
+  LUser.Free;
   LFound := LRepo.FindById('u1');
   AssertEquals('alice_updated', LFound.Username, 'Username should be updated');
 end;
@@ -158,7 +124,7 @@ var
 begin
   LRepo := TInMemoryUserRepository.Create;
   LUser := TUser.Create('u1', 'alice', urUser);
-  LRepo.Save(LUser);
+  LRepo.Add(LUser);
   LRepo.Delete('u1');
   AssertTrue(LRepo.FindById('u1') = nil, 'User should be removed after delete');
 end;
@@ -188,6 +154,15 @@ end;
 
 { --- TAuthService tests --- }
 
+function CreateAuthService(out ARepo: IUserRepository;
+  out AHasher: IPasswordHasher): TAuthService;
+begin
+  ARepo := TInMemoryUserRepository.Create;
+  AHasher := TBasicPasswordHasher.Create;
+  ARepo.Add(CreateTestUser('u1', 'alice', urUser, AHasher, 'secret'));
+  Result := TAuthService.Create(ARepo, AHasher, 3);
+end;
+
 procedure Test_Auth_LoginSuccess;
 var
   LRepo: IUserRepository;
@@ -196,10 +171,7 @@ var
   LUser: TUser;
   LResult: TLoginResult;
 begin
-  LRepo := TInMemoryUserRepository.Create;
-  LHasher := TBasicPasswordHasher.Create;
-  LRepo.Save(CreateTestUser('u1', 'alice', urUser, LHasher, 'secret'));
-  LAuth := TAuthService.Create(LRepo, LHasher, 3);
+  LAuth := CreateAuthService(LRepo, LHasher);
   LResult := LAuth.Login('alice', 'secret', LUser);
   AssertTrue(LResult = lrSuccess, 'Login should succeed with valid credentials');
   AssertTrue(LUser <> nil, 'User should be returned on success');
@@ -213,10 +185,7 @@ var
   LUser: TUser;
   LResult: TLoginResult;
 begin
-  LRepo := TInMemoryUserRepository.Create;
-  LHasher := TBasicPasswordHasher.Create;
-  LRepo.Save(CreateTestUser('u1', 'alice', urUser, LHasher, 'secret'));
-  LAuth := TAuthService.Create(LRepo, LHasher, 3);
+  LAuth := CreateAuthService(LRepo, LHasher);
   LResult := LAuth.Login('alice', 'wrong', LUser);
   AssertTrue(LResult = lrInvalidCredentials, 'Wrong password should be rejected');
   AssertTrue(LUser = nil, 'User should be nil on failure');
@@ -245,10 +214,7 @@ var
   LUser: TUser;
   LResult: TLoginResult;
 begin
-  LRepo := TInMemoryUserRepository.Create;
-  LHasher := TBasicPasswordHasher.Create;
-  LRepo.Save(CreateTestUser('u1', 'alice', urUser, LHasher, 'secret'));
-  LAuth := TAuthService.Create(LRepo, LHasher, 3);
+  LAuth := CreateAuthService(LRepo, LHasher);
   LResult := LAuth.Login('', 'secret', LUser);
   AssertTrue(LResult = lrUsernameRequired, 'Empty username should be rejected');
 end;
@@ -261,10 +227,7 @@ var
   LUser: TUser;
   LResult: TLoginResult;
 begin
-  LRepo := TInMemoryUserRepository.Create;
-  LHasher := TBasicPasswordHasher.Create;
-  LRepo.Save(CreateTestUser('u1', 'alice', urUser, LHasher, 'secret'));
-  LAuth := TAuthService.Create(LRepo, LHasher, 3);
+  LAuth := CreateAuthService(LRepo, LHasher);
   LResult := LAuth.Login('alice', '', LUser);
   AssertTrue(LResult = lrPasswordRequired, 'Empty password should be rejected');
 end;
@@ -278,10 +241,7 @@ var
   I: Integer;
   LResult: TLoginResult;
 begin
-  LRepo := TInMemoryUserRepository.Create;
-  LHasher := TBasicPasswordHasher.Create;
-  LRepo.Save(CreateTestUser('u1', 'alice', urUser, LHasher, 'secret'));
-  LAuth := TAuthService.Create(LRepo, LHasher, 3);
+  LAuth := CreateAuthService(LRepo, LHasher);
   for I := 1 to 3 do
     LAuth.Login('alice', 'wrong', LUser);
   LResult := LAuth.Login('alice', 'secret', LUser);
@@ -297,43 +257,32 @@ var
   LFound: TUser;
   LResult: TLoginResult;
 begin
-  LRepo := TInMemoryUserRepository.Create;
-  LHasher := TBasicPasswordHasher.Create;
-  LRepo.Save(CreateTestUser('u1', 'alice', urUser, LHasher, 'secret'));
-  LAuth := TAuthService.Create(LRepo, LHasher, 3);
+  LAuth := CreateAuthService(LRepo, LHasher);
   LAuth.Login('alice', 'wrong', LUser);
   LAuth.Login('alice', 'secret', LUser);
   LFound := LRepo.FindByUsername('alice');
   AssertEquals(0, LFound.FailedLoginAttempts, 'Failed attempts should reset after success');
 end;
 
+procedure Test_Auth_LockoutPersistsInRepo;
+var
+  LRepo: IUserRepository;
+  LHasher: IPasswordHasher;
+  LAuth: TAuthService;
+  LUser: TUser;
+  LFound: TUser;
+  I: Integer;
+begin
+  LAuth := CreateAuthService(LRepo, LHasher);
+  for I := 1 to 3 do
+    LAuth.Login('alice', 'wrong', LUser);
+  LFound := LRepo.FindByUsername('alice');
+  AssertTrue(LFound.IsLocked, 'Lockout should persist in repo after 3 failures');
+  AssertEquals(3, LFound.FailedLoginAttempts,
+    'Failed attempts should persist in repo');
+end;
+
 { --- TSessionService tests --- }
-
-type
-  TMutableClock = class(TInterfacedObject, IClock)
-  private
-    FNow: TDateTime;
-  public
-    constructor Create(const ANow: TDateTime);
-    procedure AdvanceMinutes(AMinutes: Integer);
-    function Now: TDateTime;
-  end;
-
-constructor TMutableClock.Create(const ANow: TDateTime);
-begin
-  inherited Create;
-  FNow := ANow;
-end;
-
-procedure TMutableClock.AdvanceMinutes(AMinutes: Integer);
-begin
-  FNow := FNow + (AMinutes / (24 * 60));
-end;
-
-function TMutableClock.Now: TDateTime;
-begin
-  Result := FNow;
-end;
 
 procedure Test_Session_IsActiveAfterLogin;
 var
@@ -346,7 +295,7 @@ begin
   LUser := TUser.Create('u1', 'alice', urUser);
   LSession.StartSession(LUser);
   AssertTrue(LSession.IsActive, 'Session should be active after login');
-  LUser.Free;
+  LSession.Free;
 end;
 
 procedure Test_Session_ExpiresAfterTimeout;
@@ -361,7 +310,7 @@ begin
   LSession.StartSession(LUser);
   LClock.AdvanceMinutes(6);
   AssertTrue(not LSession.IsActive, 'Session should expire after timeout');
-  LUser.Free;
+  LSession.Free;
 end;
 
 procedure Test_Session_TouchPreventsExpiry;
@@ -378,7 +327,7 @@ begin
   LSession.Touch;
   LClock.AdvanceMinutes(3);
   AssertTrue(LSession.IsActive, 'Session should remain active after touch');
-  LUser.Free;
+  LSession.Free;
 end;
 
 procedure Test_Session_NotActiveAfterEnd;
@@ -393,7 +342,7 @@ begin
   LSession.StartSession(LUser);
   LSession.EndSession;
   AssertTrue(not LSession.IsActive, 'Session should not be active after EndSession');
-  LUser.Free;
+  LSession.Free;
 end;
 
 { --- TPermissionService tests --- }
@@ -411,7 +360,7 @@ begin
   LSession.StartSession(LUser);
   LPerm := TPermissionService.Create(LSession);
   AssertTrue(LPerm.IsAdmin, 'Admin user should have admin permission');
-  LUser.Free;
+  LSession.Free;
 end;
 
 procedure Test_Permission_RegularUserIsNotAdmin;
@@ -427,7 +376,7 @@ begin
   LSession.StartSession(LUser);
   LPerm := TPermissionService.Create(LSession);
   AssertTrue(not LPerm.IsAdmin, 'Regular user should not have admin permission');
-  LUser.Free;
+  LSession.Free;
 end;
 
 { --- TLoginPreferences tests --- }
@@ -473,6 +422,7 @@ begin
   Test_Auth_EmptyPassword;
   Test_Auth_LockoutAfter3Failures;
   Test_Auth_SuccessResetsFailedCounter;
+  Test_Auth_LockoutPersistsInRepo;
 
   Test_Session_IsActiveAfterLogin;
   Test_Session_ExpiresAfterTimeout;

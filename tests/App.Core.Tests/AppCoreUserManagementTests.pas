@@ -13,55 +13,8 @@ uses
   AppCoreUserRepository,
   AppCoreAuth,
   AppCoreClock,
-  AppCoreUserManagement;
-
-type
-  TMutableClock = class(TInterfacedObject, IClock)
-  private
-    FNow: TDateTime;
-  public
-    constructor Create(const ANow: TDateTime);
-    function Now: TDateTime;
-  end;
-
-constructor TMutableClock.Create(const ANow: TDateTime);
-begin
-  inherited Create;
-  FNow := ANow;
-end;
-
-function TMutableClock.Now: TDateTime;
-begin
-  Result := FNow;
-end;
-
-var
-  TestCount: Integer;
-  FailCount: Integer;
-
-procedure AssertTrue(ACondition: Boolean; const AMessage: string);
-begin
-  Inc(TestCount);
-  if not ACondition then
-  begin
-    Writeln('FAIL: ' + AMessage);
-    Inc(FailCount);
-  end
-  else
-    Writeln('PASS: ' + AMessage);
-end;
-
-procedure AssertEquals(AExpected, AActual: string; const AMessage: string); overload;
-begin
-  AssertTrue(AExpected = AActual, AMessage + ' Expected "' + AExpected +
-    '", got "' + AActual + '".');
-end;
-
-procedure AssertEquals(AExpected, AActual: Integer; const AMessage: string); overload;
-begin
-  AssertTrue(AExpected = AActual, AMessage + ' Expected ' + IntToStr(AExpected) +
-    ', got ' + IntToStr(AActual) + '.');
-end;
+  AppCoreUserManagement,
+  AppCoreTestUtils;
 
 function CreateAdminSession: TSessionService;
 var
@@ -85,148 +38,131 @@ begin
   Result.StartSession(LUser);
 end;
 
+function CreateUserMgmtService(out ARepo: IUserRepository;
+  out ASession: TSessionService): TUserManagementService;
+var
+  LHasher: IPasswordHasher;
+  LPerm: TPermissionService;
+begin
+  ARepo := TInMemoryUserRepository.Create;
+  LHasher := TBasicPasswordHasher.Create;
+  ASession := CreateAdminSession;
+  LPerm := TPermissionService.Create(ASession);
+  Result := TUserManagementService.Create(ARepo, LHasher, LPerm);
+end;
+
 { --- Tests --- }
 
 procedure Test_UserMgmt_CreateUserSuccess;
 var
   LRepo: IUserRepository;
-  LHasher: IPasswordHasher;
   LSession: TSessionService;
-  LPerm: TPermissionService;
   LService: TUserManagementService;
   LUser: TUser;
   LError: string;
 begin
-  LRepo := TInMemoryUserRepository.Create;
-  LHasher := TBasicPasswordHasher.Create;
-  LSession := CreateAdminSession;
-  LPerm := TPermissionService.Create(LSession);
-  LService := TUserManagementService.Create(LRepo, LHasher, LPerm);
+  LService := CreateUserMgmtService(LRepo, LSession);
+  try
+    AssertTrue(LService.CreateUser('bob', 'pass123', urUser, LError),
+      'CreateUser should succeed with valid data');
+    AssertEquals('', LError, 'Error should be empty on success');
 
-  AssertTrue(LService.CreateUser('bob', 'pass123', urUser, LError),
-    'CreateUser should succeed with valid data');
-  AssertEquals('', LError, 'Error should be empty on success');
-
-  LUser := LRepo.FindByUsername('bob');
-  AssertTrue(LUser <> nil, 'User should exist in repo');
-  AssertTrue(LUser.Role = urUser, 'Role should be urUser');
-
-  LSession.Free;
+    LUser := LRepo.FindByUsername('bob');
+    AssertTrue(LUser <> nil, 'User should exist in repo');
+    AssertTrue(LUser.Role = urUser, 'Role should be urUser');
+  finally
+    LSession.Free;
+  end;
 end;
 
 procedure Test_UserMgmt_RejectEmptyUsername;
 var
   LRepo: IUserRepository;
-  LHasher: IPasswordHasher;
   LSession: TSessionService;
-  LPerm: TPermissionService;
   LService: TUserManagementService;
   LError: string;
 begin
-  LRepo := TInMemoryUserRepository.Create;
-  LHasher := TBasicPasswordHasher.Create;
-  LSession := CreateAdminSession;
-  LPerm := TPermissionService.Create(LSession);
-  LService := TUserManagementService.Create(LRepo, LHasher, LPerm);
-
-  AssertTrue(not LService.CreateUser('', 'pass', urUser, LError),
-    'CreateUser should reject empty username');
-  AssertEquals('admin_username_required', LError,
-    'Error should be admin_username_required');
-
-  LSession.Free;
+  LService := CreateUserMgmtService(LRepo, LSession);
+  try
+    AssertTrue(not LService.CreateUser('', 'pass', urUser, LError),
+      'CreateUser should reject empty username');
+    AssertEquals('admin_username_required', LError,
+      'Error should be admin_username_required');
+  finally
+    LSession.Free;
+  end;
 end;
 
 procedure Test_UserMgmt_RejectEmptyPassword;
 var
   LRepo: IUserRepository;
-  LHasher: IPasswordHasher;
   LSession: TSessionService;
-  LPerm: TPermissionService;
   LService: TUserManagementService;
   LError: string;
 begin
-  LRepo := TInMemoryUserRepository.Create;
-  LHasher := TBasicPasswordHasher.Create;
-  LSession := CreateAdminSession;
-  LPerm := TPermissionService.Create(LSession);
-  LService := TUserManagementService.Create(LRepo, LHasher, LPerm);
-
-  AssertTrue(not LService.CreateUser('bob', '', urUser, LError),
-    'CreateUser should reject empty password');
-  AssertEquals('admin_password_required', LError,
-    'Error should be admin_password_required');
-
-  LSession.Free;
+  LService := CreateUserMgmtService(LRepo, LSession);
+  try
+    AssertTrue(not LService.CreateUser('bob', '', urUser, LError),
+      'CreateUser should reject empty password');
+    AssertEquals('admin_password_required', LError,
+      'Error should be admin_password_required');
+  finally
+    LSession.Free;
+  end;
 end;
 
 procedure Test_UserMgmt_RejectDuplicateUsername;
 var
   LRepo: IUserRepository;
-  LHasher: IPasswordHasher;
   LSession: TSessionService;
-  LPerm: TPermissionService;
   LService: TUserManagementService;
   LError: string;
 begin
-  LRepo := TInMemoryUserRepository.Create;
-  LHasher := TBasicPasswordHasher.Create;
-  LSession := CreateAdminSession;
-  LPerm := TPermissionService.Create(LSession);
-  LService := TUserManagementService.Create(LRepo, LHasher, LPerm);
-
-  AssertTrue(LService.CreateUser('bob', 'pass', urUser, LError),
-    'First creation should succeed');
-  AssertTrue(not LService.CreateUser('bob', 'other', urUser, LError),
-    'Second creation with same username should fail');
-  AssertEquals('admin_username_exists', LError,
-    'Error should be admin_username_exists');
-
-  LSession.Free;
+  LService := CreateUserMgmtService(LRepo, LSession);
+  try
+    AssertTrue(LService.CreateUser('bob', 'pass', urUser, LError),
+      'First creation should succeed');
+    AssertTrue(not LService.CreateUser('bob', 'other', urUser, LError),
+      'Second creation with same username should fail');
+    AssertEquals('admin_username_exists', LError,
+      'Error should be admin_username_exists');
+  finally
+    LSession.Free;
+  end;
 end;
 
 procedure Test_UserMgmt_GetUsers;
 var
   LRepo: IUserRepository;
-  LHasher: IPasswordHasher;
   LSession: TSessionService;
-  LPerm: TPermissionService;
   LService: TUserManagementService;
   LList: TList;
   LError: string;
 begin
-  LRepo := TInMemoryUserRepository.Create;
-  LHasher := TBasicPasswordHasher.Create;
-  LSession := CreateAdminSession;
-  LPerm := TPermissionService.Create(LSession);
-  LService := TUserManagementService.Create(LRepo, LHasher, LPerm);
+  LService := CreateUserMgmtService(LRepo, LSession);
+  try
+    LService.CreateUser('bob', 'pass', urUser, LError);
+    LService.CreateUser('alice', 'pass', urAdmin, LError);
 
-  LService.CreateUser('bob', 'pass', urUser, LError);
-  LService.CreateUser('alice', 'pass', urAdmin, LError);
-
-  LList := LService.GetUsers;
-  AssertEquals(2, LList.Count, 'GetUsers should return all users');
-
-  LSession.Free;
+    LList := LService.GetUsers;
+    AssertEquals(2, LList.Count, 'GetUsers should return all users');
+  finally
+    LSession.Free;
+  end;
 end;
 
 procedure Test_UserMgmt_CanManageForAdmin;
 var
   LRepo: IUserRepository;
-  LHasher: IPasswordHasher;
   LSession: TSessionService;
-  LPerm: TPermissionService;
   LService: TUserManagementService;
 begin
-  LRepo := TInMemoryUserRepository.Create;
-  LHasher := TBasicPasswordHasher.Create;
-  LSession := CreateAdminSession;
-  LPerm := TPermissionService.Create(LSession);
-  LService := TUserManagementService.Create(LRepo, LHasher, LPerm);
-
-  AssertTrue(LService.CanManage, 'Admin should be able to manage users');
-
-  LSession.Free;
+  LService := CreateUserMgmtService(LRepo, LSession);
+  try
+    AssertTrue(LService.CanManage, 'Admin should be able to manage users');
+  finally
+    LSession.Free;
+  end;
 end;
 
 procedure Test_UserMgmt_CanManageForRegularUser;
@@ -242,11 +178,12 @@ begin
   LSession := CreateUserSession;
   LPerm := TPermissionService.Create(LSession);
   LService := TUserManagementService.Create(LRepo, LHasher, LPerm);
-
-  AssertTrue(not LService.CanManage,
-    'Regular user should not be able to manage users');
-
-  LSession.Free;
+  try
+    AssertTrue(not LService.CanManage,
+      'Regular user should not be able to manage users');
+  finally
+    LSession.Free;
+  end;
 end;
 
 { --- Runner --- }

@@ -1,10 +1,9 @@
-unit AppWinPreferencesFrame;
+unit PreferencesFrame;
 
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls,
+  Windows, SysUtils, Classes, Controls, Forms, Dialogs, StdCtrls,
   AppCoreLocalization, AppCorePreferences;
 
 type
