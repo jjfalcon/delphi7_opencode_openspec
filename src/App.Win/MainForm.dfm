@@ -2,7 +2,7 @@ object FrmMain: TFrmMain
   Left = 0
   Top = 0
   Caption = 'SDD OpenSpec App'
-  ClientHeight = 200
+  ClientHeight = 240
   ClientWidth = 400
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -51,5 +51,22 @@ object FrmMain: TFrmMain
     Caption = 'Cerrar sesi'#243'n'
     TabOrder = 0
     OnClick = BtnLogoutClick
+  end
+  object LblLang: TLabel
+    Left = 30
+    Top = 175
+    Width = 40
+    Height = 13
+    Caption = 'Idioma:'
+  end
+  object CboLang: TComboBox
+    Left = 80
+    Top = 172
+    Width = 100
+    Height = 21
+    Style = csDropDownList
+    ItemHeight = 13
+    TabOrder = 1
+    OnChange = CboLangChange
   end
 end

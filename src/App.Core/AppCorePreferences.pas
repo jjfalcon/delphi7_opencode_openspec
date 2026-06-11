@@ -7,6 +7,8 @@ type
     ['{33333333-4444-5555-6666-777777777777}']
     function LoadLastUsername: string;
     procedure SaveLastUsername(const AUsername: string);
+    function LoadLanguage: string;
+    procedure SaveLanguage(const ALocale: string);
   end;
 
   TLoginPreferences = class(TInterfacedObject, ILoginPreferences)
@@ -16,6 +18,8 @@ type
     constructor Create(const AConfigPath: string);
     function LoadLastUsername: string;
     procedure SaveLastUsername(const AUsername: string);
+    function LoadLanguage: string;
+    procedure SaveLanguage(const ALocale: string);
   end;
 
 implementation
@@ -37,6 +41,30 @@ begin
   LIni := TIniFile.Create(FConfigPath);
   try
     Result := LIni.ReadString('Login', 'LastUsername', '');
+  finally
+    LIni.Free;
+  end;
+end;
+
+function TLoginPreferences.LoadLanguage: string;
+var
+  LIni: TIniFile;
+begin
+  LIni := TIniFile.Create(FConfigPath);
+  try
+    Result := LIni.ReadString('Language', 'Default', 'es');
+  finally
+    LIni.Free;
+  end;
+end;
+
+procedure TLoginPreferences.SaveLanguage(const ALocale: string);
+var
+  LIni: TIniFile;
+begin
+  LIni := TIniFile.Create(FConfigPath);
+  try
+    LIni.WriteString('Language', 'Default', ALocale);
   finally
     LIni.Free;
   end;

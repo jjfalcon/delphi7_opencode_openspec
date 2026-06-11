@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls,
   AppCoreUser, AppCoreUserRepository, AppCoreAuth, AppCoreClock,
-  AppCorePreferences;
+  AppCorePreferences, AppCoreLocalization;
 
 type
   TFrmLogin = class(TForm)
@@ -26,9 +26,12 @@ type
     FLoginPreferences: ILoginPreferences;
     FPasswordHasher: IPasswordHasher;
     FUserRepository: IUserRepository;
+    FLocalization: TLocalizationService;
     FLastUsername: string;
+    procedure UpdateTexts;
   public
-    procedure Configure(AUserRepository: IUserRepository);
+    procedure Configure(AUserRepository: IUserRepository;
+      ALocalization: TLocalizationService);
     property SessionService: TSessionService read FSessionService;
     property PermissionService: TPermissionService read FPermissionService;
     property LoggedInUserId: string read FLastUsername;
@@ -41,11 +44,13 @@ implementation
 
 {$R *.dfm}
 
-procedure TFrmLogin.Configure(AUserRepository: IUserRepository);
+procedure TFrmLogin.Configure(AUserRepository: IUserRepository;
+  ALocalization: TLocalizationService);
 var
   LClock: IClock;
 begin
   FUserRepository := AUserRepository;
+  FLocalization := ALocalization;
   FPasswordHasher := TBasicPasswordHasher.Create;
   FAuthService := TAuthService.Create(FUserRepository, FPasswordHasher, 3);
   LClock := TSystemClock.Create;
@@ -53,6 +58,17 @@ begin
   FPermissionService := TPermissionService.Create(FSessionService);
   FLoginPreferences := TLoginPreferences.Create(
     ExtractFilePath(Application.ExeName) + 'app.config');
+  UpdateTexts;
+end;
+
+procedure TFrmLogin.UpdateTexts;
+begin
+  Caption := FLocalization.GetString('login_title');
+  LblUsername.Caption := FLocalization.GetString('login_username');
+  LblPassword.Caption := FLocalization.GetString('login_password');
+  BtnLogin.Caption := FLocalization.GetString('login_btn_login');
+  BtnCancel.Caption := FLocalization.GetString('login_btn_cancel');
+  LblError.Caption := '';
 end;
 
 procedure TFrmLogin.FormCreate(Sender: TObject);
@@ -80,13 +96,13 @@ begin
         ModalResult := mrOk;
       end;
     lrInvalidCredentials:
-      LblError.Caption := 'Usuario o contraseña incorrectos';
+      LblError.Caption := FLocalization.GetString('login_invalid_credentials');
     lrAccountLocked:
-      LblError.Caption := 'Cuenta bloqueada. Contacte al administrador.';
+      LblError.Caption := FLocalization.GetString('login_account_locked');
     lrUsernameRequired:
-      LblError.Caption := 'El usuario es obligatorio';
+      LblError.Caption := FLocalization.GetString('login_username_required');
     lrPasswordRequired:
-      LblError.Caption := 'La contraseña es obligatoria';
+      LblError.Caption := FLocalization.GetString('login_password_required');
   end;
 end;
 

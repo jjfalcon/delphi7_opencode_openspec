@@ -3,7 +3,7 @@
 ## Requirements
 
 ### Requirement: User login
-The system SHALL authenticate users with username and password.
+The system SHALL authenticate users with username and password. All user-facing messages SHALL be translatable via TLocalizationService.
 
 #### Scenario: Successful login with valid credentials
 - **WHEN** user enters correct username and password
@@ -11,26 +11,26 @@ The system SHALL authenticate users with username and password.
 
 #### Scenario: Login fails with invalid password
 - **WHEN** user enters correct username but wrong password
-- **THEN** the system rejects login and shows "Invalid credentials"
+- **THEN** the system rejects login and shows translated error key 'login_invalid_credentials'
 
 #### Scenario: Login fails with non-existent user
 - **WHEN** user enters a username that does not exist
-- **THEN** the system rejects login and shows "Invalid credentials"
+- **THEN** the system rejects login and shows translated error key 'login_invalid_credentials'
 
 #### Scenario: Empty username is rejected
 - **WHEN** user submits login with empty username
-- **THEN** the system shows validation error "Username is required"
+- **THEN** the system shows translated validation error key 'login_username_required'
 
 #### Scenario: Empty password is rejected
 - **WHEN** user submits login with empty password
-- **THEN** the system shows validation error "Password is required"
+- **THEN** the system shows translated validation error key 'login_password_required'
 
 ### Requirement: Account lockout after failed attempts
 The system SHALL lock a user account after 3 consecutive failed login attempts.
 
 #### Scenario: Account is locked after 3 failed attempts
 - **WHEN** user fails to login 3 times consecutively
-- **THEN** the account is locked and further login attempts are rejected with "Account is locked"
+- **THEN** the account is locked and shows translated error key 'login_account_locked'
 
 #### Scenario: Successful login resets failed attempt counter
 - **WHEN** user logs in successfully after previous failures

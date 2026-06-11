@@ -8,11 +8,13 @@ uses
   IniFiles,
   ActiveX,
   AppCoreAuthServiceTests in 'AppCoreAuthServiceTests.pas',
+  AppCoreLocalizationTests in 'AppCoreLocalizationTests.pas',
   AppCoreUser in '..\..\src\App.Core\AppCoreUser.pas',
   AppCoreUserRepository in '..\..\src\App.Core\AppCoreUserRepository.pas',
   AppCoreAuth in '..\..\src\App.Core\AppCoreAuth.pas',
   AppCoreClock in '..\..\src\App.Core\AppCoreClock.pas',
-  AppCorePreferences in '..\..\src\App.Core\AppCorePreferences.pas';
+  AppCorePreferences in '..\..\src\App.Core\AppCorePreferences.pas',
+  AppCoreLocalization in '..\..\src\App.Core\AppCoreLocalization.pas';
 
 var
   Failures: Integer;
@@ -23,6 +25,7 @@ begin
 
   try
     RunAuthServiceTests(Failures);
+    RunLocalizationTests(Failures);
 
     if Failures = 0 then
       Writeln('All tests passed.')

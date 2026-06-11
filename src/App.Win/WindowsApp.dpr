@@ -14,12 +14,18 @@ uses
   AppCoreUserRepository in '..\App.Core\AppCoreUserRepository.pas',
   AppCoreAuth in '..\App.Core\AppCoreAuth.pas',
   AppCoreClock in '..\App.Core\AppCoreClock.pas',
-  AppCorePreferences in '..\App.Core\AppCorePreferences.pas';
+  AppCorePreferences in '..\App.Core\AppCorePreferences.pas',
+  AppCoreLocalization in '..\App.Core\AppCoreLocalization.pas';
 
 var
   LUserRepo: IUserRepository;
   LHasher: IPasswordHasher;
   LAdmin: TUser;
+  LConfigPath: string;
+  LLangPath: string;
+  LDefaultLocale: string;
+  LLoginPrefs: ILoginPreferences;
+  LLocalization: TLocalizationService;
 begin
   CoInitializeEx(nil, COINIT_MULTITHREADED);
   Application.Initialize;
@@ -36,15 +42,21 @@ begin
     LUserRepo.Save(LAdmin);
   end;
 
+  LConfigPath := ExtractFilePath(Application.ExeName) + 'app.config';
+  LLangPath := ExtractFilePath(Application.ExeName) + 'lang\';
+  LLoginPrefs := TLoginPreferences.Create(LConfigPath);
+  LDefaultLocale := LLoginPrefs.LoadLanguage;
+  LLocalization := TLocalizationService.Create(LLangPath, LDefaultLocale);
+
   FrmLogin := TFrmLogin.Create(Application);
   try
-    FrmLogin.Configure(LUserRepo);
+    FrmLogin.Configure(LUserRepo, LLocalization);
 
     if FrmLogin.ShowModal = mrOk then
     begin
       Application.CreateForm(TFrmMain, FrmMain);
       FrmMain.Configure(FrmLogin.SessionService,
-        FrmLogin.SessionService.LoggedInUser);
+        FrmLogin.SessionService.LoggedInUser, LLocalization, LLoginPrefs);
       FrmLogin.Free;
       FrmLogin := nil;
       Application.Run;
@@ -52,5 +64,6 @@ begin
   finally
     if FrmLogin <> nil then
       FrmLogin.Free;
+    LLocalization.Free;
   end;
 end.
