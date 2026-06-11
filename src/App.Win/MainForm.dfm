@@ -2,8 +2,8 @@ object FrmMain: TFrmMain
   Left = 0
   Top = 0
   Caption = 'SDD OpenSpec App'
-  ClientHeight = 240
-  ClientWidth = 400
+  ClientHeight = 300
+  ClientWidth = 600
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -15,58 +15,109 @@ object FrmMain: TFrmMain
   OnClose = FormClose
   PixelsPerInch = 96
   TextHeight = 13
-  object LblWelcome: TLabel
-    Left = 30
-    Top = 40
-    Width = 340
-    Height = 25
-    Alignment = taCenter
-    AutoSize = False
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -16
-    Font.Name = 'Tahoma'
-    Font.Style = [fsBold]
-    ParentFont = False
-  end
-  object LblRole: TLabel
-    Left = 30
-    Top = 80
-    Width = 340
-    Height = 20
-    Alignment = taCenter
-    AutoSize = False
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clGray
-    Font.Height = -13
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    ParentFont = False
-  end
-  object BtnLogout: TButton
-    Left = 160
-    Top = 130
-    Width = 80
-    Height = 25
-    Caption = 'Cerrar sesi'#243'n'
+  object PanelNav: TPanel
+    Left = 0
+    Top = 0
+    Width = 150
+    Height = 300
+    Align = alLeft
+    BevelOuter = bvLowered
     TabOrder = 0
-    OnClick = BtnLogoutClick
+    object LstNav: TListBox
+      Left = 1
+      Top = 1
+      Width = 148
+      Height = 298
+      Align = alClient
+      ItemHeight = 13
+      TabOrder = 0
+      OnClick = LstNavClick
+    end
   end
-  object LblLang: TLabel
-    Left = 30
-    Top = 175
-    Width = 40
-    Height = 13
-    Caption = 'Idioma:'
-  end
-  object CboLang: TComboBox
-    Left = 80
-    Top = 172
-    Width = 100
-    Height = 21
-    Style = csDropDownList
-    ItemHeight = 13
+  object PanelTop: TPanel
+    Left = 150
+    Top = 0
+    Width = 450
+    Height = 35
+    Align = alTop
+    BevelOuter = bvNone
     TabOrder = 1
-    OnChange = CboLangChange
+    object LblWelcome: TLabel
+      Left = 15
+      Top = 10
+      Width = 120
+      Height = 16
+      Caption = 'Bienvenido'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = [fsBold]
+      ParentFont = False
+    end
+    object LblRole: TLabel
+      Left = 150
+      Top = 11
+      Width = 100
+      Height = 13
+      Caption = 'Rol'
+    end
+    object BtnLogout: TButton
+      Left = 360
+      Top = 5
+      Width = 80
+      Height = 25
+      Caption = 'Cerrar sesi'#243'n'
+      TabOrder = 0
+      OnClick = BtnLogoutClick
+    end
+  end
+  object PanelCenter: TPanel
+    Left = 150
+    Top = 35
+    Width = 450
+    Height = 265
+    Align = alClient
+    BevelOuter = bvNone
+    TabOrder = 2
+    object PanelWelcome: TPanel
+      Left = 0
+      Top = 0
+      Width = 450
+      Height = 265
+      Align = alClient
+      BevelOuter = bvNone
+      TabOrder = 0
+      object LblWelcomeMsg: TLabel
+        Left = 60
+        Top = 70
+        Width = 330
+        Height = 30
+        Alignment = taCenter
+        AutoSize = False
+        Caption = 'Bienvenido'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -16
+        Font.Name = 'Tahoma'
+        Font.Style = [fsBold]
+        ParentFont = False
+      end
+      object LblRoleMsg: TLabel
+        Left = 60
+        Top = 110
+        Width = 330
+        Height = 20
+        Alignment = taCenter
+        AutoSize = False
+        Caption = 'Rol'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clGray
+        Font.Height = -13
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
+    end
   end
 end

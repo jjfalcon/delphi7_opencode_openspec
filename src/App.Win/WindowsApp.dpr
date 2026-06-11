@@ -10,12 +10,15 @@ uses
   ActiveX,
   LoginForm in 'LoginForm.pas' {FrmLogin},
   MainForm in 'MainForm.pas' {FrmMain},
+  AppWinPreferencesFrame in 'AppWinPreferencesFrame.pas' {FramePreferences: TFrame},
+  AppWinUserAdminFrame in 'AppWinUserAdminFrame.pas' {FrameUserAdmin: TFrame},
   AppCoreUser in '..\App.Core\AppCoreUser.pas',
   AppCoreUserRepository in '..\App.Core\AppCoreUserRepository.pas',
   AppCoreAuth in '..\App.Core\AppCoreAuth.pas',
   AppCoreClock in '..\App.Core\AppCoreClock.pas',
   AppCorePreferences in '..\App.Core\AppCorePreferences.pas',
-  AppCoreLocalization in '..\App.Core\AppCoreLocalization.pas';
+  AppCoreLocalization in '..\App.Core\AppCoreLocalization.pas',
+  AppCoreUserManagement in '..\App.Core\AppCoreUserManagement.pas';
 
 var
   LUserRepo: IUserRepository;
@@ -26,6 +29,8 @@ var
   LDefaultLocale: string;
   LLoginPrefs: ILoginPreferences;
   LLocalization: TLocalizationService;
+  LPermService: TPermissionService;
+  LUserMgmt: TUserManagementService;
 begin
   CoInitializeEx(nil, COINIT_MULTITHREADED);
   Application.Initialize;
@@ -54,9 +59,14 @@ begin
 
     if FrmLogin.ShowModal = mrOk then
     begin
+      LPermService := TPermissionService.Create(FrmLogin.SessionService);
+      LUserMgmt := TUserManagementService.Create(LUserRepo, LHasher,
+        LPermService);
+
       Application.CreateForm(TFrmMain, FrmMain);
       FrmMain.Configure(FrmLogin.SessionService,
-        FrmLogin.SessionService.LoggedInUser, LLocalization, LLoginPrefs);
+        FrmLogin.SessionService.LoggedInUser, LLocalization, LLoginPrefs,
+        LUserMgmt);
       FrmLogin.Free;
       FrmLogin := nil;
       Application.Run;

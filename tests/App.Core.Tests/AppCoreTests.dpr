@@ -9,12 +9,14 @@ uses
   ActiveX,
   AppCoreAuthServiceTests in 'AppCoreAuthServiceTests.pas',
   AppCoreLocalizationTests in 'AppCoreLocalizationTests.pas',
+  AppCoreUserManagementTests in 'AppCoreUserManagementTests.pas',
   AppCoreUser in '..\..\src\App.Core\AppCoreUser.pas',
   AppCoreUserRepository in '..\..\src\App.Core\AppCoreUserRepository.pas',
   AppCoreAuth in '..\..\src\App.Core\AppCoreAuth.pas',
   AppCoreClock in '..\..\src\App.Core\AppCoreClock.pas',
   AppCorePreferences in '..\..\src\App.Core\AppCorePreferences.pas',
-  AppCoreLocalization in '..\..\src\App.Core\AppCoreLocalization.pas';
+  AppCoreLocalization in '..\..\src\App.Core\AppCoreLocalization.pas',
+  AppCoreUserManagement in '..\..\src\App.Core\AppCoreUserManagement.pas';
 
 var
   Failures: Integer;
@@ -26,6 +28,7 @@ begin
   try
     RunAuthServiceTests(Failures);
     RunLocalizationTests(Failures);
+    RunUserManagementTests(Failures);
 
     if Failures = 0 then
       Writeln('All tests passed.')
