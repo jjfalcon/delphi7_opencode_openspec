@@ -20,6 +20,22 @@ The system SHALL allow admin users to create, view, and manage user accounts.
 - **WHEN** an admin accesses the user list
 - **THEN** all registered users are displayed
 
+#### Scenario: Admin can create a new user
+- **WHEN** an admin fills in username, password, and role for a new user
+- **THEN** the new user is saved and appears in the user list
+
+#### Scenario: Create user rejects empty username
+- **WHEN** an admin tries to create a user with an empty username
+- **THEN** the system shows validation error 'admin_username_required'
+
+#### Scenario: Create user rejects empty password
+- **WHEN** an admin tries to create a user with an empty password
+- **THEN** the system shows validation error 'admin_password_required'
+
+#### Scenario: Create user rejects duplicate username
+- **WHEN** an admin tries to create a user with an existing username
+- **THEN** the system shows validation error 'admin_username_exists'
+
 #### Scenario: Non-admin cannot access user management
 - **WHEN** a regular user attempts to access user management
 - **THEN** access is denied
